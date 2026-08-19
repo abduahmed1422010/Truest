@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - الرئيسية</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .dashboard-container a, .dashboard-container button {
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { margin-top: 100px; }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-controls">
+            <button onclick="logoutManager()" class="btn-back" style="background-color: #a94442;">🚪 خروج</button>
+            <select class="lang-select" onchange="window.location.hash=this.value">
+                <option value="ar">العربية (AR)</option>
+                <option value="en">English (EN)</option>
+                <option value="gr">Ελληνικά (GR)</option>
+            </select>
+        </div>
+    </header>
+
+    <h1>لوحة تحكم المدير</h1>
+
+    <div class="dashboard-container">
+        
+        <a href="manager-requests.html" class="btn btn-primary">📋 طلبات المساعدين (الأساسية)</a>
+        <a href="manager-complaints.html" class="btn btn-secondary">📩 الشكاوي والاقتراحات</a>
+        <a href="manager-emergency.html" class="btn btn-primary" style="background-color: #a94442;">🚨 حالات الطوارئ</a>
+        
+        <button onclick="openTicketModal()" class="btn btn-secondary">🎟️ إضافة كود تذاكر</button>
+        
+        <a href="manager-comments.html" class="btn btn-primary">⭐ تقييمات وتعليقات</a>
+        <a href="manager-hotels.html" class="btn btn-secondary">🏨 إضافة/إدارة الفنادق</a>
+        <a href="manager-restaurants.html" class="btn btn-primary">🍽️ إضافة/إدارة المطاعم</a>
+    </div>
+
+    <div id="ticketModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+        <form id="addCodeForm" style="background:var(--card-bg); padding:30px; border-radius:10px; width:90%; max-width:400px;">
+            <h2>إضافة كود جديد</h2>
+            <input type="text" name="code" placeholder="كود التذكرة" required>
+            <button type="submit" class="btn btn-primary">حفظ الكود</button>
+            <button type="button" onclick="closeTicketModal()" class="btn btn-secondary" style="background-color:#555;">إلغاء</button>
+            <div id="codeResult" style="margin-top: 10px;"></div>
+        </form>
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+
+    <script>
+        // حماية الصفحة: توجيه إذا لم يكن المدير مسجلاً
+        if (localStorage.getItem('managerLoggedIn') !== 'true') {
+            alert('يجب تسجيل الدخول أولاً.');
+            window.location.href = 'manager.html';
+        }
+
+        function logoutManager() {
+            localStorage.removeItem('managerLoggedIn');
+            window.location.href = 'manager.html';
+        }
+        
+        function openTicketModal() {
+            document.getElementById('ticketModal').style.display = 'flex';
+        }
+
+        function closeTicketModal() {
+            document.getElementById('ticketModal').style.display = 'none';
+        }
+
+        document.getElementById('addCodeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // بما أن التحقق من المدير موجود في الباك إند، نرسل البيانات الثابتة
+            const code = document.getElementById('addCodeForm').code.value;
+            const data = { 
+                code: code,
+                username: 'Abdu', // بيانات الدخول الثابتة
+                password: '1422010' // بيانات الدخول الثابتة
+            };
+
+            const codeResult = document.getElementById('codeResult');
+            
+            try {
+                const res = await fetch('/api/addTicketCode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    codeResult.className = 'success';
+                    codeResult.innerHTML = result.message;
+                    document.getElementById('addCodeForm').reset();
+                    setTimeout(closeTicketModal, 2000);
+                } else {
+                    codeResult.className = 'error';
+                    codeResult.innerHTML = result.message;
+                }
+            } catch (error) {
+                codeResult.className = 'error';
+                codeResult.innerHTML = 'فشل الاتصال بالسيرفر.';
+            }
+        });
+    </script>
+</body>
+</html>

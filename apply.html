@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقديم طلب انضمام</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* إلغاء الـ Margin Top التلقائي لتصحيح الترتيب بعد الرأس الثابت */
+        h1 { margin-top: 100px; }
+        form { max-width: 800px; } /* توسيع النموذج قليلاً */
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-controls">
+            <a href="index.html" class="btn-back">🔙 رجوع</a>
+            <select class="lang-select" onchange="window.location.hash=this.value">
+                <option value="ar">العربية (AR)</option>
+                <option value="en">English (EN)</option>
+                <option value="gr">Ελληνικά (GR)</option>
+            </select>
+        </div>
+    </header>
+
+    <h1>تقديم طلب انضمام</h1>
+
+    <form id="applyForm">
+        <input type="text" name="name" placeholder="الاسم الكامل" required>
+        <input type="text" name="phone" placeholder="رقم الهاتف" required>
+        <input type="text" name="address" placeholder="العنوان" required>
+        
+        <select name="language" required>
+            <option value="">اختر لغة الترجمة الأساسية</option>
+            <option value="ar">العربية</option>
+            <option value="en">الإنجليزية</option>
+            <option value="gr">اليونانية</option>
+        </select>
+
+        <select name="job" id="jobSelect" required>
+            <option value="">اختر الوظيفة</option>
+            <option value="مرشد سياحي">مرشد سياحي</option>
+            <option value="مرافق لذوي الاحتياجات الخاصة">مرافق لذوي الاحتياجات الخاصة</option>
+            <option value="سائق نقل عام">سائق نقل عام</option>
+            <option value="سائق نقل خاص">سائق نقل خاص</option>
+        </select>
+        
+        <div id="fileUploads" style="margin-top: 20px;">
+            <div class="file-upload-group always-required" style="display:none;">
+                <label>🪪 الهوية الوطنية (وجه)</label>
+                <input type="file" name="file_id_front" accept="image/*, application/pdf">
+                <label>🪪 الهوية الوطنية (ظهر)</label>
+                <input type="file" name="file_id_back" accept="image/*, application/pdf">
+
+                <label>📄 السيرة الذاتية (CV)</label>
+                <input type="file" name="file_cv" accept=".pdf, .doc, .docx">
+            </div>
+
+            <div id="tourGuideFiles" class="file-upload-group job-specific">
+                <label>🚗 الرخصة السياحية (وجه)</label>
+                <input type="file" name="file_license_tour_front" accept="image/*, application/pdf">
+                <label>🚗 الرخصة السياحية (ظهر)</label>
+                <input type="file" name="file_license_tour_back" accept="image/*, application/pdf">
+            </div>
+
+            <div id="disabilityHelperFiles" class="file-upload-group job-specific">
+                <label>🎫 كارنيه سابق (إن وجد) - اختياري</label>
+                <input type="file" name="file_prev_card" accept="image/*, application/pdf">
+            </div>
+
+            <div id="publicDriverFiles" class="file-upload-group job-specific">
+                <label>🚛 رخصة القيادة العامة (وجه)</label>
+                <input type="file" name="file_license_public_front" accept="image/*, application/pdf">
+                <label>🚛 رخصة القيادة العامة (ظهر)</label>
+                <input type="file" name="file_license_public_back" accept="image/*, application/pdf">
+            </div>
+
+            <div id="privateDriverFiles" class="file-upload-group job-specific">
+                <label>🚗 رخصة القيادة الخاصة (وجه)</label>
+                <input type="file" name="file_license_private_front" accept="image/*, application/pdf">
+                <label>🚗 رخصة القيادة الخاصة (ظهر)</label>
+                <input type="file" name="file_license_private_back" accept="image/*, application/pdf">
+            </div>
+
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">📝 إرسال الطلب</button>
+    </form>
+
+    <div id="result"></div>
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+
+    <script>
+        const form = document.getElementById("applyForm");
+        const resultDiv = document.getElementById("result");
+        const jobSelect = document.getElementById("jobSelect");
+
+        function updateFileUploads() {
+            const selectedJob = jobSelect.value;
+            const allJobSpecificDivs = document.querySelectorAll('.job-specific');
+            const alwaysRequiredInputs = document.querySelectorAll('.always-required input[type="file"]');
+            
+            document.querySelectorAll('input[type="file"]').forEach(input => input.removeAttribute('required'));
+
+            allJobSpecificDivs.forEach(div => {
+                div.style.display = 'none';
+            });
+            
+            if (selectedJob !== "") {
+                 document.querySelectorAll('.file-upload-group.always-required').forEach(div => div.style.display = 'block');
+                 alwaysRequiredInputs.forEach(input => input.setAttribute('required', 'required'));
+            } else {
+                 document.querySelectorAll('.file-upload-group.always-required').forEach(div => div.style.display = 'none');
+            }
+
+            let targetDivId = null;
+            if (selectedJob === "مرشد سياحي") {
+                targetDivId = 'tourGuideFiles';
+            } else if (selectedJob === "مرافق لذوي الاحتياجات الخاصة") {
+                targetDivId = 'disabilityHelperFiles';
+            } else if (selectedJob === "سائق نقل عام") {
+                targetDivId = 'publicDriverFiles';
+            } else if (selectedJob === "سائق نقل خاص") {
+                targetDivId = 'privateDriverFiles';
+            }
+
+            if (targetDivId) {
+                const targetDiv = document.getElementById(targetDivId);
+                targetDiv.style.display = 'block';
+                targetDiv.querySelectorAll('input[type="file"]').forEach(input => {
+                    if (input.name !== 'file_prev_card') { 
+                        input.setAttribute('required', 'required');
+                    }
+                });
+            }
+        }
+
+        jobSelect.addEventListener("change", updateFileUploads);
+        document.addEventListener('DOMContentLoaded', updateFileUploads);
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            if (!form.checkValidity()) {
+                 resultDiv.classList.add('error');
+                 resultDiv.innerHTML = '⚠️ يرجى ملء جميع الحقول المطلوبة واختيار الوظيفة.';
+                 return;
+            }
+
+            const formData = new FormData(form);
+            
+            resultDiv.classList.remove('success', 'error');
+            resultDiv.innerHTML = '⏳ جارٍ إرسال الطلب...';
+
+            try {
+                const res = await fetch(`/api/apply`, { 
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    resultDiv.classList.add('success');
+                    resultDiv.innerHTML = `✅ تم استلام طلبك بنجاح، رقم الطلب هو <strong>${data.requestId}</strong>. <a href="status.html?id=${data.requestId}" style="color: yellow; text-decoration: underline;">اضغط للاستعلام الآن.</a>`;
+                    form.reset();
+                    updateFileUploads(); 
+                } else {
+                    resultDiv.classList.add('error');
+                    resultDiv.innerHTML = `⚠️ حدث خطأ أثناء إرسال الطلب: ${data.message || 'خطأ غير معروف في السيرفر.'}`;
+                }
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                resultDiv.classList.add('error');
+                resultDiv.innerHTML = `⚠️ فشل الاتصال بالسيرفر. تأكد من أن السيرفر يعمل (node server.js).`;
+            }
+        });
+    </script>
+</body>
+</html>

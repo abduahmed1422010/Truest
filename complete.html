@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استكمال البيانات</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>استكمال البيانات الإضافية</h1>
+
+    <form id="completeForm">
+        <p style="text-align: center; color: var(--gold);">رقم الطلب: <strong id="displayRequestId">---</strong></p>
+        <input type="hidden" name="requestId" id="hiddenRequestId">
+
+        <label>صورة شخصية</label>
+        <input type="file" name="file_personal_photo" accept="image/*" required>
+        
+        <label>مواعيد العمل المفضلة (نبذة قصيرة)</label>
+        <textarea name="work_schedule" placeholder="مثال: من الأحد إلى الخميس، من 9 صباحاً حتى 5 مساءً" rows="3" required></textarea>
+
+        <label>الحد الأقصى لعدد السياح</label>
+        <input type="number" name="max_tourists" placeholder="مثال: 10" required min="1">
+
+        <label>موقع اللقاء أو المدينة الرئيسية للعمل</label>
+        <input type="text" name="meeting_location" placeholder="مثال: دبي، أبو ظبي" required>
+
+        <label>نبذة قصيرة عن خبرتك</label>
+        <textarea name="experience_summary" placeholder="اكتب نبذة عن خبرتك السياحية أو في مجال العمل المختار" rows="5" required></textarea>
+
+        <button type="submit" class="btn btn-secondary" style="width: 100%; margin-top: 20px;">حفظ البيانات</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        const completeForm = document.getElementById("completeForm");
+        const completeResultDiv = document.getElementById("result");
+        const hiddenRequestId = document.getElementById("hiddenRequestId");
+        const displayRequestId = document.getElementById("displayRequestId");
+        
+        // جلب رقم الطلب من URL 
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestId = urlParams.get('id');
+
+        if (requestId) {
+            hiddenRequestId.value = requestId;
+            displayRequestId.textContent = requestId;
+        } else {
+             completeResultDiv.innerHTML = '<p class="error">⚠️ خطأ: لا يوجد رقم طلب محدد لاستكمال البيانات.</p>';
+             completeForm.style.display = 'none';
+        }
+
+
+        completeForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(completeForm);
+            
+            completeResultDiv.classList.remove('success', 'error');
+            completeResultDiv.innerHTML = '⏳ جارٍ الحفظ...';
+
+            try {
+                const res = await fetch(`/api/complete`, { 
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    completeResultDiv.classList.add('success');
+                    completeResultDiv.innerHTML = `🎉 تم حفظ بياناتك بنجاح، يمكنك الآن الاستعلام برقم الطلب (${requestId}) لتأكيد اكتمال الحالة.`;
+                    completeForm.style.display = 'none'; 
+                } else {
+                    completeResultDiv.classList.add('error');
+                    completeResultDiv.innerHTML = `⚠️ حدث خطأ أثناء إرسال البيانات: ${data.message || 'خطأ غير معروف'}`;
+                }
+            } catch (err) {
+                console.error(err);
+                completeResultDiv.classList.add('error');
+                completeResultDiv.innerHTML = `⚠️ لم يتم الاتصال بالسيرفر.`;
+            }
+        });
+    </script>
+
+</body>
+</html>

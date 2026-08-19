@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الانضمام أو الاستعلام</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .join-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh; 
+            padding-top: 50px; 
+        }
+        .join-container h1 {
+            margin-bottom: 50px;
+            margin-top: 0;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 40px; 
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-controls">
+            <a href="index.html" class="btn-back">🔙 الصفحة الرئيسية</a>
+            <select class="lang-select" onchange="window.location.hash=this.value">
+                <option value="ar">العربية (AR)</option>
+                <option value="en">English (EN)</option>
+                <option value="gr">Ελληνικά (GR)</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="join-container">
+        <h1>اختر الإجراء المطلوب</h1>
+        
+        <div class="action-buttons">
+            <a href="apply.html" class="btn btn-primary" style="padding: 15px 40px; font-size: 1.2em;">
+                📝 تقديم طلب انضمام جديد
+            </a>
+            
+            <a href="status.html" class="btn btn-secondary" style="padding: 15px 40px; font-size: 1.2em;">
+                🔍 الاستعلام عن حالة الطلب
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+</body>
+</html>

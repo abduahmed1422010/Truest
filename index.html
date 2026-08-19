@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الصفحة الرئيسية</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 15vh;
+        }
+        .logo-placeholder {
+            font-size: 2em;
+            color: var(--gold);
+            margin-bottom: 40px;
+        }
+        .code-entry-form {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        /* إخفاء الرأس في الصفحة الرئيسية */
+        header.app-header {
+            display: none !important; 
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="logo-placeholder">🇦🇪 بوابة المساعد السياحي</div>
+
+        <h1>اهلا بيك انضم كمساعد سياحي</h1>
+        
+        <div style="margin-top: 30px;">
+            <a href="join.html" class="btn btn-primary" style="padding: 15px 40px; font-size: 1.2em;">
+                ⭐ انضم كمساعد سياحي
+            </a>
+        </div>
+        
+        <div class="code-entry-form">
+            <h2>دخول المستخدمين (كود التذكرة)</h2>
+            <form id="ticketCodeForm">
+                <input type="text" name="code" placeholder="أدخل كود التذكرة" required style="text-align: center;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">استخدام الكود والدخول</button>
+            </form>
+            <div id="codeEntryResult" style="margin-top: 10px;"></div>
+        </div>
+        
+        <div class="code-entry-form" style="margin-top: 20px;">
+            <p style="margin-bottom: 10px; color: var(--gold);">للاقتراحات أو الشكاوى:</p>
+            <button class="btn btn-secondary" onclick="openComplaintModal()" style="width: 100%;">📧 إرسال شكوى / اقتراح</button>
+        </div>
+
+    </div>
+    
+    <div id="complaintModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+        <form id="complaintForm" style="background:var(--card-bg); padding:30px; border-radius:10px; width:90%; max-width:400px;">
+            <h2>📧 شكوى / اقتراح</h2>
+            <input type="text" name="name" placeholder="الاسم" required>
+            <input type="text" name="phone" placeholder="رقم الهاتف للتواصل" required>
+            <textarea name="message" placeholder="اكتب اقتراحك أو شكواك هنا" rows="5" required></textarea>
+            <button type="submit" class="btn btn-primary">إرسال</button>
+            <button type="button" onclick="closeComplaintModal()" class="btn btn-secondary" style="background-color:#555;">إلغاء</button>
+            <div id="complaintResult" style="margin-top: 10px;"></div>
+        </form>
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+    
+    <script>
+        function openComplaintModal() {
+            document.getElementById('complaintModal').style.display = 'flex';
+        }
+
+        function closeComplaintModal() {
+            document.getElementById('complaintModal').style.display = 'none';
+        }
+        
+        document.getElementById('complaintForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(document.getElementById('complaintForm'));
+            const data = Object.fromEntries(formData.entries());
+            const complaintResult = document.getElementById('complaintResult');
+            
+            try {
+                const res = await fetch('/api/submitComplaint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    complaintResult.className = 'success';
+                    complaintResult.innerHTML = result.message;
+                    document.getElementById('complaintForm').reset();
+                    setTimeout(closeComplaintModal, 3000);
+                } else {
+                    complaintResult.className = 'error';
+                    complaintResult.innerHTML = result.message;
+                }
+            } catch (error) {
+                // رسالة الخطأ الجديدة للشكوى
+                complaintResult.className = 'error';
+                complaintResult.innerHTML = 'فشل الدخول، يرجى المحاولة مرة أخرى لاحقاً.';
+            }
+        });
+
+        document.getElementById('ticketCodeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('ticketCodeForm').code.value;
+            const resultDiv = document.getElementById('codeEntryResult');
+            
+            try {
+                const res = await fetch('/api/verifyTicketCode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = '✅ تم الدخول بنجاح. جاري التوجيه...';
+                    localStorage.setItem('userTicketCode', code);
+                    setTimeout(() => {
+                        window.location.href = 'user-dashboard.html';
+                    }, 1500);
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = data.message;
+                }
+            } catch (error) {
+                // رسالة الخطأ الجديدة لكود التذكرة
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = 'فشل الدخول، يرجى المحاولة مرة أخرى لاحقاً.';
+            }
+        });
+    </script>
+</body>
+</html>

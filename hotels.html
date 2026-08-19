@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الفنادق القريبة</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        h1 { margin-top: 100px; }
+        .filter-controls {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .filter-controls input, .filter-controls select {
+            flex-grow: 1;
+            min-width: 200px;
+        }
+        .data-card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--blue-royal);
+        }
+        .card-details {
+            margin-top: 15px;
+            border-top: 1px dashed #333;
+            padding-top: 10px;
+        }
+        .card-details p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        .view-more-btn {
+            background-color: #388e3c;
+            width: 100%;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-controls">
+            <a href="user-dashboard.html" class="btn-back">🔙 الخدمات</a>
+            <select class="lang-select" onchange="window.location.hash=this.value">
+                <option value="ar">العربية (AR)</option>
+                <option value="en">English (EN)</option>
+                <option value="gr">Ελληνικά (GR)</option>
+            </select>
+        </div>
+    </header>
+
+    <h1>🏨 الفنادق القريبة</h1>
+
+    <div class="filter-controls">
+        <input type="text" id="searchName" placeholder="بحث باسم الفندق">
+        <select id="filterStars">
+            <option value="">تصفية حسب النجوم</option>
+            <option value="5">⭐⭐⭐⭐⭐</option>
+            <option value="4">⭐⭐⭐⭐</option>
+            <option value="3">⭐⭐⭐</option>
+            <option value="2">⭐⭐</option>
+            <option value="1">⭐</option>
+        </select>
+        <button class="btn btn-primary" onclick="filterHotels()">تصفية</button>
+    </div>
+
+    <div id="hotelsContainer" class="card-container">
+        <p style="grid-column: 1 / -1; text-align: center;">جاري تحميل الفنادق...</p>
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+
+    <script>
+        let allHotels = [];
+        
+        // حماية الصفحة
+        if (!localStorage.getItem('userTicketCode')) {
+            // يمكن إزالة هذه الحماية إذا كانت الصفحة مفتوحة للجميع
+            // window.location.href = 'index.html';
+        }
+
+        async function fetchHotels() {
+            try {
+                const res = await fetch('/api/hotels');
+                allHotels = await res.json();
+                renderHotels(allHotels);
+            } catch (error) {
+                document.getElementById('hotelsContainer').innerHTML = '<p style="color:red; grid-column: 1 / -1;">❌ فشل تحميل بيانات الفنادق.</p>';
+            }
+        }
+
+        function renderStars(rating) {
+            const fullStars = Math.floor(rating);
+            let starsHtml = '';
+            for (let i = 0; i < fullStars; i++) {
+                starsHtml += '★';
+            }
+            return `<span class="rating-stars">${starsHtml}</span> (${rating})`;
+        }
+
+        function renderHotels(hotels) {
+            const container = document.getElementById('hotelsContainer');
+            container.innerHTML = '';
+
+            if (hotels.length === 0) {
+                 container.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color:#ccc;">لا توجد فنادق متاحة حالياً.</p>';
+                 return;
+            }
+
+            hotels.forEach(hotel => {
+                const hotelRating = parseFloat(hotel.rating) || 0;
+                const card = document.createElement('div');
+                card.className = 'data-card';
+                card.innerHTML = `
+                    <h3>${hotel.name}</h3>
+                    <p>${renderStars(hotel.stars)}</p>
+                    <p style="color: var(--gold);">${hotel.price_night}</p>
+
+                    <div class="card-details">
+                        <p>📍 الموقع: ${hotel.location}</p>
+                        <p>⭐ تقييم المستخدمين: ${renderStars(hotelRating)} (${hotel.reviews.length} تقييم)</p>
+                        <p>🎁 تشمل: ${hotel.includes}</p>
+                    </div>
+                    <button class="btn view-more-btn" onclick="openHotelDetails('${hotel.id}')">عرض التفاصيل والتقييمات</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        // لوجيك التصفية والبحث
+        function filterHotels() {
+            const searchTerm = document.getElementById('searchName').value.toLowerCase();
+            const starFilter = document.getElementById('filterStars').value;
+            
+            let filtered = allHotels.filter(hotel => {
+                const nameMatch = hotel.name.toLowerCase().includes(searchTerm);
+                const starMatch = !starFilter || hotel.stars.toString() === starFilter;
+                return nameMatch && starMatch;
+            });
+            
+            renderHotels(filtered);
+        }
+
+        function openHotelDetails(hotelId) {
+            // توجيه لصفحة تفاصيل الفندق (تحتاج لإنشاء ملف details.html)
+            window.location.href = `hotel-details.html?id=${hotelId}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchHotels);
+    </script>
+</body>
+</html>

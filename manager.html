@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول الإدارة</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 10vh auto 0;
+            padding: 40px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
+        }
+        .login-container h1 {
+            color: var(--gold);
+            margin-bottom: 30px;
+            margin-top: 0;
+        }
+        /* إخفاء الرأس في صفحة الدخول (لا يوجد رجوع) */
+        header.app-header {
+             display: none !important; 
+        }
+        .lang-select {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+    
+    <select class="lang-select" onchange="window.location.hash=this.value">
+        <option value="ar">العربية (AR)</option>
+        <option value="en">English (EN)</option>
+        <option value="gr">Ελληνικά (GR)</option>
+    </select>
+
+    <div class="login-container">
+        <h1>تسجيل دخول الإدارة</h1>
+        <form id="loginForm">
+            <input type="text" name="username" placeholder="اسم المستخدم" required>
+            <input type="password" name="password" placeholder="كلمة المرور" required>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">دخول</button>
+        </form>
+        <div id="loginResult" style="margin-top: 15px;"></div>
+    </div>
+    
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const loginResult = document.getElementById('loginResult');
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = loginForm.username.value;
+            const password = loginForm.password.value;
+            
+            loginResult.classList.remove('success', 'error');
+            loginResult.innerHTML = '⏳ جاري التحقق...';
+
+            try {
+                // نستخدم نقطة نهاية بسيطة للتحقق من البيانات على السيرفر
+                const res = await fetch('/api/managerLogin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    loginResult.className = 'success';
+                    loginResult.innerHTML = '✅ تم الدخول بنجاح. جاري التوجيه...';
+                    
+                    // حفظ مفتاح الجلسة
+                    localStorage.setItem('managerLoggedIn', 'true'); 
+                    setTimeout(() => {
+                        window.location.href = 'manager-dashboard.html';
+                    }, 1000);
+                } else {
+                    loginResult.className = 'error';
+                    loginResult.innerHTML = '❌ اسم المستخدم أو كلمة المرور غير صحيحة.';
+                }
+            } catch (error) {
+                loginResult.className = 'error';
+                loginResult.innerHTML = '❌ فشل الاتصال بالسيرفر. تأكد من تشغيل server.js.';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>طلبات المساعدين</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* إضافة ستايل الجدول من الكود القديم */
+        h1 { margin-top: 100px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--card-bg);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+            max-width: 1200px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: right;
+        }
+        th {
+            background-color: #2a2a2a;
+            color: var(--gold);
+            font-weight: bold;
+        }
+        .file-buttons a {
+            display: block;
+            margin: 3px 0;
+            padding: 5px 10px;
+            background-color: var(--blue-royal);
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .action-btns button {
+            padding: 8px 15px;
+            margin: 2px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-controls">
+            <a href="manager-dashboard.html" class="btn-back">🔙 لوحة التحكم</a>
+            <select class="lang-select" onchange="window.location.hash=this.value">
+                <option value="ar">العربية (AR)</option>
+                <option value="en">English (EN)</option>
+                <option value="gr">Ελληνικά (GR)</option>
+            </select>
+        </div>
+    </header>
+
+    <h1>طلبات المساعدين للانضمام</h1>
+
+    <div style="display: flex; justify-content: space-between; width: 95%; max-width: 1200px; margin-bottom: 20px;">
+        <button class="btn btn-secondary" onclick="fetchRequests()">🔄 تحديث الطلبات</button>
+        <button class="btn btn-primary" style="background-color: #a94442;" onclick="deleteAllRequests()">🗑 حذف جميع الطلبات</button>
+    </div>
+
+    <table id="requestsTable">
+        <thead>
+            <tr>
+                <th>رقم الطلب</th>
+                <th>الاسم</th>
+                <th>الوظيفة</th>
+                <th>لغة الترجمة</th>
+                <th>الحالة</th>
+                <th>الملفات المرفقة</th>
+                <th>أدوات</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+    
+    <div id="statusMessage" style="margin-top: 20px; color: var(--gold);"></div>
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+
+    <script>
+        // حماية الصفحة
+        if (localStorage.getItem('managerLoggedIn') !== 'true') {
+            window.location.href = 'manager.html';
+        }
+        
+        // ... (هنا يأتي كود الجافاسكريبت لجلب وعرض الطلبات من manager.html القديم) ...
+        const tableBody = document.getElementById('requestsTable').querySelector('tbody');
+        const statusMessageDiv = document.getElementById('statusMessage');
+
+        // خريطة لربط مفاتيح JSON بأسماء العرض بناءً على الوظيفة (من الكود القديم)
+        const jobFileMap = {
+            "مرشد سياحي": [
+                { name: 'الهوية (وجه)', key: 'file_id_front' },
+                { name: 'الهوية (ظهر)', key: 'file_id_back' },
+                { name: 'الرخصة السياحية (وجه)', key: 'file_license_tour_front' },
+                { name: 'الرخصة السياحية (ظهر)', key: 'file_license_tour_back' },
+                { name: 'السيرة الذاتية', key: 'file_cv' }
+            ],
+            // ... (باقي الوظائف هنا) ...
+            "مرافق لذوي الاحتياجات الخاصة": [
+                { name: 'الهوية (وجه)', key: 'file_id_front' },
+                { name: 'الهوية (ظهر)', key: 'file_id_back' },
+                { name: 'كارنيه سابق', key: 'file_prev_card', optional: true },
+                { name: 'السيرة الذاتية', key: 'file_cv' }
+            ],
+            "سائق نقل عام": [
+                { name: 'الهوية (وجه)', key: 'file_id_front' },
+                { name: 'الهوية (ظهر)', key: 'file_id_back' },
+                { name: 'رخصة القيادة العامة (وجه)', key: 'file_license_public_front' },
+                { name: 'رخصة القيادة العامة (ظهر)', key: 'file_license_public_back' },
+                { name: 'السيرة الذاتية', key: 'file_cv' }
+            ],
+            "سائق نقل خاص": [
+                { name: 'الهوية (وجه)', key: 'file_id_front' },
+                { name: 'الهوية (ظهر)', key: 'file_id_back' },
+                { name: 'رخصة القيادة الخاصة (وجه)', key: 'file_license_private_front' },
+                { name: 'رخصة القيادة الخاصة (ظهر)', key: 'file_license_private_back' },
+                { name: 'السيرة الذاتية', key: 'file_cv' }
+            ]
+        };
+        
+        async function fetchRequests() {
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">⏳ جارٍ تحميل الطلبات...</td></tr>';
+            statusMessageDiv.textContent = '';
+            try {
+                const res = await fetch('/api/requests');
+                const requests = await res.json();
+                renderTable(requests);
+            } catch (error) {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ فشل تحميل الطلبات. تأكد من تشغيل السيرفر.</td></tr>';
+            }
+        }
+
+        function renderTable(requests) {
+            tableBody.innerHTML = '';
+            if (requests.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">لا توجد طلبات حالياً.</td></tr>';
+                return;
+            }
+
+            requests.forEach(req => {
+                const row = tableBody.insertRow();
+                
+                row.insertCell().textContent = req.requestId;
+                row.insertCell().textContent = req.name;
+                row.insertCell().textContent = req.job;
+                row.insertCell().textContent = req.language || 'غير محدد'; // إضافة اللغة
+                row.insertCell().textContent = getStatusText(req.status);
+                
+                const filesCell = row.insertCell();
+                filesCell.className = 'file-buttons';
+                
+                const filesToDisplay = jobFileMap[req.job] || [];
+                
+                filesToDisplay.forEach(fileInfo => {
+                    const filename = req.files ? req.files[fileInfo.key] : null;
+                    if (filename) {
+                        const link = `<a href="/uploads/${filename}" target="_blank">🔽 ${fileInfo.name}</a>`;
+                        filesCell.innerHTML += link;
+                    } else if (fileInfo.optional !== true) {
+                         filesCell.innerHTML += `<span style="color:red; font-size: 0.8em; display:block;">${fileInfo.name}: مفقود</span>`;
+                    }
+                });
+
+                if (req.completeData && req.completeData.personal_photo) {
+                     filesCell.innerHTML += `<a href="/uploads/${req.completeData.personal_photo}" target="_blank" style="background-color: #388e3c;">📷 صورة شخصية</a>`;
+                }
+
+                const toolsCell = row.insertCell();
+                toolsCell.className = 'action-btns';
+                toolsCell.innerHTML = `
+                    <button class="btn btn-secondary" style="background-color: #3c763d;" onclick="updateStatus('${req.requestId}', 'accepted')">✅ قبول</button>
+                    <button class="btn btn-secondary" style="background-color: #a94442;" onclick="updateStatus('${req.requestId}', 'rejected')">❌ رفض</button>
+                    <button class="btn btn-secondary" style="background-color: #555;" onclick="deleteRequest('${req.requestId}')">🗑 حذف</button>
+                `;
+            });
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'accepted': return '✅ تم القبول';
+                case 'rejected': return '❌ تم الرفض';
+                case 'completed': return '🎉 تم الاكتمال';
+                default: return '⏳ قيد المراجعة';
+            }
+        }
+
+        async function updateStatus(requestId, status) {
+            if (!confirm(`هل أنت متأكد من تغيير حالة الطلب ${requestId} إلى ${getStatusText(status)}؟`)) return;
+            statusMessageDiv.textContent = 'جاري التحديث...';
+
+            try {
+                const res = await fetch('/api/updateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId, status })
+                });
+                if(res.ok) {
+                   statusMessageDiv.textContent = `✅ تم تحديث حالة الطلب ${requestId}.`;
+                } else {
+                   statusMessageDiv.textContent = '❌ فشل تحديث الحالة.';
+                }
+                fetchRequests(); 
+            } catch (error) {
+                statusMessageDiv.textContent = '❌ فشل الاتصال بالسيرفر أثناء التحديث.';
+            }
+        }
+        
+        async function deleteRequest(requestId) {
+            if (!confirm(`هل أنت متأكد من حذف الطلب ${requestId}؟`)) return;
+            statusMessageDiv.textContent = 'جاري الحذف...';
+
+            try {
+                const res = await fetch('/api/deleteRequest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requestId })
+                });
+                if(res.ok) {
+                   statusMessageDiv.textContent = `🗑 تم حذف الطلب ${requestId} بنجاح.`;
+                } else {
+                   statusMessageDiv.textContent = '❌ فشل حذف الطلب.';
+                }
+                fetchRequests(); 
+            } catch (error) {
+                statusMessageDiv.textContent = '❌ فشل الاتصال بالسيرفر أثناء الحذف.';
+            }
+        }
+
+        async function deleteAllRequests() {
+            if (!confirm('تحذير: هل أنت متأكد من حذف جميع الطلبات؟ لا يمكن التراجع عن هذا الإجراء!')) return;
+            statusMessageDiv.textContent = 'جاري حذف جميع الطلبات...';
+
+            try {
+                const res = await fetch('/api/deleteAll', { method: 'POST' });
+                if(res.ok) {
+                   statusMessageDiv.textContent = '🗑 تم حذف جميع الطلبات بنجاح.';
+                } else {
+                   statusMessageDiv.textContent = '❌ فشل حذف جميع الطلبات.';
+                }
+                fetchRequests(); 
+            } catch (error) {
+                statusMessageDiv.textContent = '❌ فشل الاتصال بالسيرفر أثناء حذف الجميع.';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchRequests);
+    </script>
+</body>
+</html>

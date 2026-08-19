@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المستخدم</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-grid {
+            width: 100%;
+            max-width: 900px;
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .dashboard-grid a, .dashboard-grid button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            height: 120px;
+            line-height: 1.2;
+            padding: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .controls-top {
+            display: flex;
+            justify-content: flex-end; /* لزر اللغة فقط */
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto 20px;
+        }
+        .controls-top .lang-select {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-size: 1em;
+        }
+        .emergency-btn {
+            margin-top: 40px;
+            background-color: #d9534f !important; /* أحمر */
+            box-shadow: 0 4px 15px rgba(217, 83, 79, 0.6);
+            color: white !important;
+        }
+        .emergency-btn:hover {
+            background-color: #c9302c !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls-top">
+        <select class="lang-select" onchange="window.location.hash=this.value">
+            <option value="ar">العربية (AR)</option>
+            <option value="en">English (EN)</option>
+            <option value="gr">Ελληνικά (GR)</option>
+        </select>
+    </div>
+
+    <h1>اختر خدمتك السياحية</h1>
+    
+    <div class="dashboard-grid">
+        
+        <a href="https://alisedafnan-maker.github.io/mywebapp/turesm.html" target="_blank" class="btn btn-primary">🗺️ المعالم السياحية</a>
+        <a href="guides.html" class="btn btn-secondary">👨‍💼 المرشدين السياحيين</a>
+        <a href="companions.html" class="btn btn-primary">♿ مرافق لذوي الاحتياجات الخاصة</a>
+        <a href="transport.html" class="btn btn-secondary">🚕 خدمات التنقل</a>
+        <a href="hotels.html" class="btn btn-primary">🏨 الفنادق القريبة</a>
+        <a href="chat.html" class="btn btn-secondary">💬 الشات السياحي المترجم</a>
+
+    </div>
+    
+    <button onclick="sendEmergencyAlert()" class="btn emergency-btn" style="width: 100%; max-width: 400px;">
+        🚨 الطوارئ (999) - إرسال الموقع
+    </button>
+    <div id="emergencyResult" style="margin-top: 15px; width: 100%; max-width: 400px; text-align: center;"></div>
+    
+
+    <footer>
+        جميع الحقوق محفوظة ل© عبدالرحمن احمد
+    </footer>
+    
+    <script>
+        
+        // دالة إرسال الطوارئ
+        function sendEmergencyAlert() {
+            const resultDiv = document.getElementById('emergencyResult');
+            resultDiv.classList.remove('success', 'error');
+            resultDiv.innerHTML = '⏳ جاري تحديد الموقع...';
+
+            // 1. الاتصال بالطوارئ (عمل محاكاة)
+            window.location.href = "tel:999"; 
+            
+            // 2. إرسال الموقع
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const locationData = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                    };
+                    
+                    try {
+                        const res = await fetch('/api/emergency', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                location: `GPS: ${locationData.latitude}, ${locationData.longitude} (Accuracy: ${locationData.accuracy}m)`,
+                                contact: '999'
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (data.success) {
+                            resultDiv.className = 'success';
+                            resultDiv.innerHTML = '✅ تم الاتصال بالطوارئ وإرسال موقعك بنجاح للإدارة.';
+                        } else {
+                            resultDiv.className = 'error';
+                            resultDiv.innerHTML = '⚠️ فشل إرسال الموقع للإدارة، لكن تم الاتصال بالطوارئ (999).';
+                        }
+                    } catch (error) {
+                         resultDiv.className = 'error';
+                         resultDiv.innerHTML = '⚠️ فشل الاتصال بالسيرفر. تم الاتصال بالطوارئ (999).';
+                    }
+                }, (error) => {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = '❌ لم نتمكن من تحديد الموقع. تم الاتصال بالطوارئ (999).';
+                });
+            } else {
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = '❌ المتصفح لا يدعم تحديد الموقع. تم الاتصال بالطوارئ (999).';
+            }
+        }
+    </script>
+</body>
+</html>
