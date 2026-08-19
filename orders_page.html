@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>استقبال الطلبات</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; --green:#4caf50; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; }
+.container { max-width:900px; margin:30px auto; background:var(--card-bg); padding:20px; border-radius:10px; border:1px solid var(--gold); }
+h2 { text-align:center; color:var(--gold); margin-bottom:20px; }
+h3 { color:var(--gold); }
+button { padding:10px 15px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; margin-top:5px; }
+.top-buttons { display:flex; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:5px; }
+.btn-back { background:var(--blue-royal); color:#fff; }
+.btn-refresh { background:var(--gold); color:#000; }
+.btn-delete-all { background:var(--red); color:#fff; }
+.order-card { background:#2a2a2a; margin-bottom:10px; padding:10px; border-radius:5px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; border:1px solid var(--blue-royal); }
+.order-info { flex:1; }
+.small-btn { padding:5px 8px; font-size:12px; margin-left:5px; border-radius:5px; }
+.delete-btn { background:var(--red); color:#fff; }
+.location-btn { background:var(--green); color:#fff; }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>استقبال الطلبات</h2>
+<div id="ordersDiv">
+    <div class="top-buttons">
+        <button id="backToLoginBtn" class="btn-back">🔙 تسجيل الدخول</button>
+        <button id="refreshBtn" class="btn-refresh">🔄 تحديث</button>
+        <button id="deleteAllBtn" class="btn-delete-all">🗑️ حذف الكل</button>
+    </div>
+    <h3>الطلبات الخاصة بالمكان: <span id="placeTitle">تحميل...</span></h3>
+    <div id="ordersContainer"><p style="color:var(--gold);">جاري تحميل الطلبات...</p></div>
+</div>
+<audio id="notifSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const ordersContainer = document.getElementById('ordersContainer');
+const placeTitle = document.getElementById('placeTitle');
+const notifSound = document.getElementById('notifSound');
+let currentCode = null, knownOrders = new Set();
+async function displayOrders(snapshotData=null){
+    let ordersObj = snapshotData || {};
+    if(!snapshotData){ const snap = await get(ref(db,'bookings/'+currentCode)); ordersObj = snap.exists()?snap.val():{}; }
+    ordersContainer.innerHTML=''; const keys = Object.keys(ordersObj);
+    if(!keys.length){ ordersContainer.innerHTML='<p style="text-align:center;color:var(--gold);">لا توجد طلبات جديدة.</p>'; return; }
+    keys.forEach((key,i)=>{
+        const order = ordersObj[key];
+        const div = document.createElement('div'); div.className='order-card';
+        div.innerHTML = `<div class="order-info"><strong>طلب رقم ${i+1}</strong><br>الاسم: ${order.name||''}<br>الهاتف: ${order.phone||''}<br>الطلب: ${order.request||''}<br>الوقت: ${order.time||''}</div>
+        <div>${order.location?`<button onclick="window.open('http://maps.google.com/?q=${order.location.lat},${order.location.lng}','_blank')" class="small-btn location-btn">📍 موقع</button>`:''}<button onclick="deleteOrder('${key}')" class="small-btn delete-btn">🗑️ حذف</button></div>`;
+        ordersContainer.appendChild(div);
+    });
+}
+window.deleteOrder = async function(key){ if(!currentCode)return; if(confirm('حذف الطلب؟')){ await remove(ref(db,'bookings/'+currentCode+'/'+key)); knownOrders.delete(key); displayOrders(); } };
+function monitorOrders(){
+    const ordersRef = ref(db,'bookings/'+currentCode);
+    onValue(ordersRef, snapshot => {
+        const data = snapshot.exists()?snapshot.val():{};
+        const keys = Object.keys(data);
+        keys.forEach(key => {
+            if(!knownOrders.has(key)){ knownOrders.add(key); notifSound.play(); if("Notification" in window && Notification.permission === "granted"){ new Notification("طلب جديد", { body: `من ${data[key].name}` }); } }
+        });
+        displayOrders(data);
+    });
+}
+document.getElementById('deleteAllBtn').onclick = async ()=>{ if(!currentCode)return; if(confirm('حذف جميع الطلبات؟')){ await set(ref(db,'bookings/'+currentCode), {}); knownOrders.clear(); displayOrders({}); } };
+document.getElementById('refreshBtn').onclick = ()=> displayOrders();
+document.getElementById('backToLoginBtn').onclick = ()=> window.location.href='login_page.html';
+if("Notification" in window && Notification.permission !== "granted") Notification.requestPermission();
+document.addEventListener('DOMContentLoaded', async ()=>{
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if(!code){ ordersContainer.innerHTML='<p style="color:var(--red);text-align:center;">لا يوجد كود في الرابط.</p>'; return; }
+    currentCode = code; placeTitle.textContent = code; monitorOrders();
+});
+</script>
+</div>
+</body>
+</html>

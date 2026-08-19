@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول - استقبال الطلبات</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+.container { max-width:400px; width:100%; margin:30px auto; background:var(--card-bg); padding:25px; border-radius:10px; border:1px solid var(--gold); }
+h2 { text-align:center; color:var(--gold); margin-bottom:20px; }
+label { display:block; margin-bottom:5px; font-weight:bold; }
+input { width:100%; padding:12px; border-radius:5px; border:1px solid var(--blue-royal); background:#2a2a2a; color:#fff; margin-bottom:15px; box-sizing:border-box; }
+button { width:100%; padding:12px; border:none; border-radius:5px; cursor:pointer; background:var(--blue-royal); color:#fff; font-weight:bold; font-size:16px; transition:0.3s; }
+button:hover { background:#3b5b82; }
+.error { color:var(--red); font-weight:bold; text-align:center; margin-top:15px; display:none; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>تسجيل دخول المشرف</h2>
+<div id="loginDiv">
+    <label>كود المكان:</label>
+    <input type="text" id="placeCode" placeholder="أدخل كود المكان">
+    <label>كلمة السر:</label>
+    <input type="password" id="placePassword" placeholder="أدخل كلمة السر">
+    <button id="loginBtn">تحميل الطلبات</button>
+    <div class="error" id="loginError"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+document.getElementById('loginBtn').onclick = async () => {
+    const code = document.getElementById('placeCode').value.trim();
+    const password = document.getElementById('placePassword').value.trim();
+    const error = document.getElementById('loginError');
+    error.style.display = 'none';
+    if(!code || !password){ error.textContent='املأ الحقول'; error.style.display='block'; return; }
+    const keys = ['hotels','restaurants','stores']; let found = false;
+    for(const key of keys){
+        const snap = await get(ref(db, key));
+        const places = snap.val() || {};
+        for(const p of Object.values(places)){
+            if(p.code === code && p.password === password){ found = true; break; }
+        }
+        if(found) break;
+    }
+    if(!found){ error.textContent='الكود أو كلمة السر غير صحيحة'; error.style.display='block'; return; }
+    window.location.href = `orders_page.html?code=${encodeURIComponent(code)}&pass=${encodeURIComponent(password)}`;
+};
+</script>
+</div>
+</body>
+</html>

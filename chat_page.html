@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الشات</title>
+<style>
+body { margin:0; font-family:Arial,sans-serif; background-color:#121212; color:#e0e0e0; }
+header { background-color: #1f1f1f; padding:12px; text-align:center; font-weight:bold; color:#ffc107; position:sticky; top:0; z-index:10; border-bottom:1px solid #4a6fa5; }
+#chatContainer { display:flex; flex-direction:column; height:calc(100vh - 60px); }
+#messages { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.message { max-width:70%; padding:8px 12px; border-radius:12px; word-wrap:break-word; }
+.message .senderName { font-size:0.75em; font-weight:bold; margin-bottom:2px; color:#ccc; }
+.message.sender { align-self:flex-end; background-color:#4a6fa5; color:#fff; }
+.message.receiver { align-self:flex-start; background-color:#2a2a2a; color:#fff; border:1px solid #4a6fa5; }
+#inputContainer { display:flex; gap:6px; padding:8px; background-color:#1f1f1f; border-top:1px solid #333; }
+#messageInput { flex:1; padding:10px; border-radius:20px; border:none; background-color:#2a2a2a; color:#fff; outline:none; }
+#sendBtn, #imageBtn, #locationBtn { padding:0 12px; border:none; border-radius:50%; background-color:#4a6fa5; color:#fff; cursor:pointer; font-size:16px; }
+#sendBtn:hover, #imageBtn:hover, #locationBtn:hover { background-color:#3b5b82; }
+#clearBtn { position:absolute; right:12px; top:12px; padding:6px 12px; border:none; border-radius:6px; background-color:#cf6679; color:#fff; cursor:pointer; z-index:20; }
+#namePromptOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; flex-direction:column; color:#fff; z-index:1000; }
+#namePromptOverlay input { padding:10px; border-radius:6px; border:none; width:250px; margin-bottom:10px; background:#2a2a2a; color:#fff; }
+#namePromptOverlay button { padding:8px 16px; border:none; border-radius:6px; background-color:#ffc107; color:#121212; cursor:pointer; font-weight:bold; }
+</style>
+</head>
+<body>
+<header id="chatHeader">الشات</header>
+<div id="namePromptOverlay" style="display:none;"><p>الرجاء إدخال اسمك:</p><input type="text" id="nameInput"><button id="nameSubmitBtn">ابدأ</button></div>
+<div id="chatContainer">
+    <div id="messages"></div>
+    <div id="inputContainer">
+        <input type="text" id="messageInput" placeholder="اكتب رسالة...">
+        <button id="sendBtn">✉️</button>
+        <button id="imageBtn">🖼️</button>
+        <button id="locationBtn">📍</button>
+    </div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const urlParams = new URLSearchParams(window.location.search); const chatCode = urlParams.get('code');
+let userName = decodeURIComponent(urlParams.get('name')||"");
+if(!chatCode){ alert('❌ لم يتم تحديد الكود.'); window.location.href='assistant_login.html'; }
+const chatRef = ref(db, `chats/${chatCode}`);
+const overlay = document.getElementById('namePromptOverlay');
+if(!userName){ overlay.style.display='flex'; document.getElementById('nameSubmitBtn').onclick=()=>{ const n=document.getElementById('nameInput').value.trim(); if(n){ userName=n; overlay.style.display='none'; } }; }
+const messagesEl = document.getElementById('messages');
+onChildAdded(chatRef, snap=>{ const msg=snap.val(); renderMessage(msg); });
+function renderMessage(msg){
+    const div=document.createElement('div'); div.classList.add('message'); div.classList.add(msg.sender===userName?'sender':'receiver');
+    const nameDiv=document.createElement('div'); nameDiv.classList.add('senderName'); nameDiv.textContent=msg.sender; div.appendChild(nameDiv);
+    if(msg.type==='text'){ const t=document.createElement('div'); t.textContent=msg.text; div.appendChild(t); }
+    else if(msg.type==='image'){ const img=document.createElement('img'); img.src=msg.text; img.style.maxWidth='100%'; img.style.borderRadius='8px'; div.appendChild(img); }
+    else if(msg.type==='location'){ const a=document.createElement('a'); a.href=msg.text; a.target='_blank'; a.textContent='📍 الموقع'; div.appendChild(a); }
+    messagesEl.appendChild(div); messagesEl.scrollTop=messagesEl.scrollHeight;
+}
+function sendMessage(type, text){ push(chatRef, {sender:userName,type,text}); }
+document.getElementById('sendBtn').onclick=()=>{ const t=document.getElementById('messageInput').value.trim(); if(t){ sendMessage('text',t); document.getElementById('messageInput').value=''; } };
+document.getElementById('imageBtn').onclick=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='image/*'; input.onchange=e=>{ const file=e.target.files[0]; if(file){ const reader=new FileReader(); reader.onload=()=>{ sendMessage('image', reader.result); }; reader.readAsDataURL(file); } }; input.click(); };
+document.getElementById('locationBtn').onclick=()=>{ if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ const url=`https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`; sendMessage('location', url); }); } };
+if(urlParams.get('showClear')==='1'){ const btn=document.createElement('button'); btn.id='clearBtn'; btn.textContent='🗑️ مسح'; btn.onclick=()=>{ if(confirm('مسح الكل؟')) remove(chatRef); }; document.getElementById('chatHeader').appendChild(btn); }
+</script>
+</body>
+</html>

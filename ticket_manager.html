@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة أكواد التذاكر</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; --green:#4caf50; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; }
+.header-controls { display:flex; justify-content:flex-end; padding:15px; background:#1f1f1f; border-bottom:1px solid var(--border); }
+.btn-back { background:var(--blue-royal); color:#fff; padding:8px 15px; border-radius:6px; text-decoration:none; }
+.container { max-width:900px; margin:40px auto; padding:20px; background:var(--card-bg); border-radius:12px; border:1px solid var(--gold); }
+h1,h2 { color:var(--gold); text-align:center; border-bottom:2px solid var(--blue-royal); padding-bottom:10px; }
+.form-group { margin-bottom:15px; }
+.form-group label { display:block; margin-bottom:5px; font-weight:bold; }
+input { width:100%; padding:10px; border-radius:5px; border:1px solid var(--blue-royal); background:#2a2a2a; color:#fff; }
+.btn-primary { background:var(--blue-royal); color:#fff; padding:10px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; margin-top:10px; }
+.btn-primary:hover { background:#3b5b82; }
+.requests-table { width:100%; border-collapse:collapse; margin-top:15px; }
+.requests-table th, .requests-table td { border:1px solid var(--border); padding:10px; text-align:center; }
+.requests-table th { background:var(--blue-royal); color:#fff; }
+.expired { color:var(--red); font-weight:bold; }
+#ticketMessage { display:none; margin-top:10px; padding:10px; border:1px solid var(--gold); border-radius:5px; max-height:200px; overflow-y:auto; }
+</style>
+</head>
+<body>
+<div class="header-controls"><a href="manager_dashboard.html" class="btn-back">🔙 لوحة المدير</a></div>
+<div class="container">
+<h1>إدارة أكواد التذاكر 🎟️</h1>
+<h2>إضافة كود جديد</h2>
+<div style="border:1px solid var(--gold); padding:20px; border-radius:8px; margin-bottom:30px;">
+    <div class="form-group"><label>كود التذكرة:</label><input type="text" id="newTicketCode" placeholder="أدخل كود فريد"></div>
+    <div class="form-group"><label>تاريخ الانتهاء:</label><input type="date" id="expiryDate"></div>
+    <button class="btn-primary" id="addTicketBtn">➕ إضافة الكود</button>
+    <div id="ticketMessage"></div>
+</div>
+<h2>قائمة الأكواد</h2>
+<table class="requests-table"><thead><tr><th>الكود</th><th>تاريخ الانتهاء</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody id="ticketsTableBody"></tbody></table>
+<p id="noTicketsMessage" style="text-align:center; color:var(--gold); margin-top:50px; display:none;">لا توجد أكواد.</p>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const ticketsRef=ref(db,'ticketCodes');
+const msgBox=document.getElementById('ticketMessage');
+function addMessage(text,type='info'){ const colors={info:'#2196f3', success:'#4caf50', error:'#f44336', loading:'#ff9800'}; msgBox.style.display='block'; msgBox.style.backgroundColor=colors[type]||'#555'; msgBox.style.color='#fff'; msgBox.style.padding='8px'; msgBox.style.borderRadius='4px'; msgBox.innerHTML=text; setTimeout(()=>{ msgBox.style.display='none'; },4000); }
+async function displayTickets(){
+    const tbody=document.getElementById('ticketsTableBody'); const noMsg=document.getElementById('noTicketsMessage'); tbody.innerHTML='';
+    const snap=await get(ticketsRef); const tickets=snap.exists()?snap.val():{};
+    const keys=Object.keys(tickets); if(!keys.length){ noMsg.style.display='block'; return; } noMsg.style.display='none';
+    const today=new Date();
+    keys.forEach(key=>{ const t=tickets[key]; const expiry=new Date(t.expiryDate); const expired=expiry<today; const tr=document.createElement('tr'); tr.innerHTML=`<td>${t.code}</td><td>${t.expiryDate}</td><td class="${expired?'expired':''}">${expired?'منتهي 🚫':'فعال ✅'}</td><td><button onclick="removeTicket('${key}')" style="background:var(--red);color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">🗑️ حذف</button></td>`; tbody.appendChild(tr); });
+}
+window.removeTicket=async function(key){ if(confirm('حذف الكود؟')){ await remove(ref(db,'ticketCodes/'+key)); displayTickets(); addMessage('تم الحذف','success'); } };
+document.getElementById('addTicketBtn').onclick=async()=>{ const code=document.getElementById('newTicketCode').value.trim(); const expiry=document.getElementById('expiryDate').value; if(!code||!expiry){ addMessage('املأ جميع الحقول','error'); return; } const snap=await get(ticketsRef); const tickets=snap.exists()?snap.val():{}; if(Object.values(tickets).some(t=>t.code===code)){ addMessage('الكود موجود مسبقاً','error'); return; } await set(ref(db,'ticketCodes/'+Date.now()),{code,expiryDate:expiry}); addMessage('تمت الإضافة ✅','success'); document.getElementById('newTicketCode').value=''; document.getElementById('expiryDate').value=''; displayTickets(); };
+displayTickets();
+</script>
+</body>
+</html>

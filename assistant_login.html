@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دخول المساعد</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; --green:#4caf50; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+.container { max-width:400px; width:90%; padding:30px; background:var(--card-bg); border-radius:12px; border:1px solid var(--gold); text-align:center; }
+h2 { color:var(--gold); margin-bottom:20px; }
+input { width:100%; padding:12px; border-radius:5px; border:1px solid var(--blue-royal); background:#2a2a2a; color:#fff; margin:10px 0; }
+button { width:100%; padding:12px; background:var(--blue-royal); color:#fff; border:none; border-radius:5px; font-weight:bold; cursor:pointer; font-size:16px; }
+button:hover { background:#3b5b82; }
+.error, .success { padding:10px; border-radius:5px; margin:10px 0; display:none; font-weight:bold; }
+.error { background:var(--red); color:#fff; }
+.success { background:var(--green); color:#fff; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>دخول المساعد</h2>
+    <div id="error" class="error"></div>
+    <div id="success" class="success"></div>
+    <label>كود التطبيق (App ID):</label>
+    <input type="text" id="appIdInput" placeholder="أدخل الكود">
+    <button id="loginBtn">تسجيل الدخول</button>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+document.getElementById('loginBtn').onclick=async()=>{
+    const appId=document.getElementById('appIdInput').value.trim();
+    const errorBox=document.getElementById('error'), successBox=document.getElementById('success');
+    errorBox.style.display='none'; successBox.style.display='none';
+    if(!appId){ errorBox.textContent='أدخل الكود'; errorBox.style.display='block'; return; }
+    try{
+        const snap=await get(ref(db,'/')); if(!snap.exists()) throw new Error('لا توجد بيانات');
+        const data=snap.val();
+        const all=[].concat(Object.values(data.assistants_guides||{}), Object.values(data.assistants_companions||{}), Object.values(data.assistants_drivers||{}));
+        const found=all.find(a=>a.appId===appId);
+        if(!found){ errorBox.textContent='الكود غير صحيح'; errorBox.style.display='block'; return; }
+        successBox.textContent='✅ تم الدخول! جاري التوجيه...'; successBox.style.display='block';
+        const name=encodeURIComponent(found.name||'مساعد');
+        setTimeout(()=>{ window.location.href=`chat_page.html?code=${appId}&name=${name}&showClear=1`; },600);
+    } catch(err){ errorBox.textContent='❌ خطأ: '+err.message; errorBox.style.display='block'; }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الأماكن</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; --orange:#ff9800; --green:#4caf50; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:20px; }
+h2 { color:var(--gold); text-align:center; border-bottom:2px solid var(--blue-royal); padding-bottom:10px; }
+#typeSelect { padding:8px; border-radius:5px; background:#2a2a2a; color:#fff; border:1px solid var(--blue-royal); margin-bottom:20px; }
+.container { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+.card { background:#1e1e1e; border-radius:10px; padding:15px; border:1px solid var(--blue-royal); transition:0.3s; }
+.card:hover { border-color:var(--gold); }
+.card img { width:100%; height:150px; object-fit:cover; border-radius:5px; margin-bottom:10px; }
+.card button { margin-top:5px; padding:7px; border:none; border-radius:5px; cursor:pointer; color:#fff; font-weight:bold; margin-left:5px; }
+.viewMap { background:var(--blue-royal); }
+.deleteBtn { background:var(--red); }
+.viewComments { background:var(--orange); }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:1000; }
+.modal-content { background:#1e1e1e; padding:20px; border-radius:10px; width:90%; max-width:500px; color:#fff; border:1px solid var(--gold); }
+.close { float:left; cursor:pointer; font-size:22px; color:#fff; }
+</style>
+</head>
+<body>
+<h2>إدارة الأماكن</h2>
+<select id="typeSelect"><option value="hotels">فنادق</option><option value="restaurants">مطاعم</option><option value="stores">محلات</option></select>
+<div class="container" id="cardsContainer"></div>
+<div class="modal" id="commentsModal"><div class="modal-content"><span class="close" id="commentsClose">&times;</span><h3>التعليقات</h3><div id="commentsList"></div></div></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get, remove } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const typeSelect=document.getElementById('typeSelect'), cards=document.getElementById('cardsContainer');
+const commentsModal=document.getElementById('commentsModal'), commentsClose=document.getElementById('commentsClose'), commentsList=document.getElementById('commentsList');
+let currentType=typeSelect.value;
+async function loadPlaces(type){ const snap=await get(ref(db,type)); return snap.exists()?Object.entries(snap.val()).map(([k,v])=>({key:k,...v})):[]; }
+async function renderCards(){
+    cards.innerHTML=''; const places=await loadPlaces(currentType);
+    if(!places.length){ cards.innerHTML='<p style="color:var(--gold);text-align:center;">لا توجد أماكن.</p>'; return; }
+    places.forEach(p=>{
+        const card=document.createElement('div'); card.className='card';
+        card.innerHTML=`<img src="${p.photoBase64}" alt="${p.name}"><h3>${p.name}</h3><p>كود: ${p.code} | باسورد: ${p.password}</p>${p.gmapsLink?`<button class="viewMap" onclick="window.open('${p.gmapsLink}','_blank')">الاتجاهات</button>`:''}<button class="viewComments" data-type="${currentType}" data-key="${p.key}">التعليقات</button><button class="deleteBtn" data-type="${currentType}" data-key="${p.key}">حذف</button>`;
+        cards.appendChild(card);
+    });
+    document.querySelectorAll('.viewComments').forEach(b=>{ b.onclick=async()=>{ const type=b.dataset.type, key=b.dataset.key; await renderComments(type,key); commentsModal.style.display='flex'; }; });
+    document.querySelectorAll('.deleteBtn').forEach(b=>{ b.onclick=async()=>{ if(confirm('حذف المكان؟')){ await remove(ref(db,`${b.dataset.type}/${b.dataset.key}`)); renderCards(); } }; });
+}
+async function renderComments(type,key){ commentsList.innerHTML='<p>جار التحميل...</p>'; const snap=await get(ref(db,`comments/${key}`)); const data=snap.exists()?snap.val():null; commentsList.innerHTML=''; if(!data){ commentsList.innerHTML='<p>لا توجد تعليقات.</p>'; return; } Object.values(data).forEach(c=>{ const div=document.createElement('div'); div.style.borderBottom='1px solid #333'; div.style.marginBottom='10px'; div.innerHTML=`<p><strong>${c.name}</strong> (${c.time})</p><p>${c.comment}</p>`; commentsList.appendChild(div); }); }
+commentsClose.onclick=()=>commentsModal.style.display='none';
+typeSelect.onchange=()=>{ currentType=typeSelect.value; renderCards(); };
+renderCards();
+</script>
+</body>
+</html>

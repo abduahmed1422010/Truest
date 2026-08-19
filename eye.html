@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang='ar'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Eye of Egypt | المعالم المصرية</title>
+  <style>
+:root { --bg-dark:#0f172a; --card-bg:#1e293b; --gold:#d4af37; --blue-royal:#0ea5e9; --text-main:#f1f5f9; --text-secondary:#cbd5e1; --btn-secondary:#334155; }
+body { font-family:'Segoe UI',Tahoma,sans-serif; background:#0f172a; color:var(--text-main); margin:0; padding:20px; direction:rtl; }
+header { text-align:center; margin-bottom:40px; border-bottom:2px solid var(--gold); padding-bottom:20px; }
+h1 { font-size:2.8rem; color:var(--gold); margin:0; text-transform:uppercase; text-shadow:0 2px 10px rgba(0,0,0,0.5); }
+.subtitle { color:var(--text-secondary); margin-top:10px; font-size:1.2rem; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(350px,1fr)); gap:30px; }
+.card { background:var(--card-bg); border-radius:16px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); border:1px solid rgba(212,175,55,0.1); transition:0.3s; display:flex; flex-direction:column; }
+.card:hover { transform:translateY(-8px); border-color:rgba(212,175,55,0.4); }
+.media { height:250px; width:100%; object-fit:cover; border-bottom:3px solid var(--gold); background:#334155; }
+.card-body { padding:20px; flex-grow:1; display:flex; flex-direction:column; }
+.card-title { font-size:1.5rem; color:var(--gold); margin:0 0 10px 0; font-weight:bold; }
+.card-short { font-size:1rem; color:var(--text-secondary); margin-bottom:25px; line-height:1.6; flex-grow:1; }
+.actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:auto; }
+.btn-full-width { grid-column:span 2; }
+button,.btn { border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold; text-decoration:none; font-size:0.95rem; transition:0.2s; text-align:center; display:inline-block; }
+.btn-toggle { background:var(--gold); color:#0f172a; }
+.btn-toggle:hover { background:#b5952f; }
+.btn-pano { background:var(--blue-royal); color:white; }
+.btn-pano:hover { background:#0284c7; }
+.btn.secondary { background:var(--btn-secondary); color:#fff; }
+.btn.secondary:hover { background:#475569; }
+.more-details { display:none; margin-top:20px; background:rgba(0,0,0,0.4); padding:20px; border-radius:12px; border-top:1px solid var(--btn-secondary); animation:fadeIn 0.4s ease; grid-column:span 2; }
+.full-desc { font-size:1.05rem; line-height:1.8; color:#e2e8f0; margin-bottom:20px; text-align:justify; }
+.map-container { width:100%; height:300px; border-radius:8px; overflow:hidden; border:2px solid var(--btn-secondary); background:#000; }
+iframe { width:100%; height:100%; border:0; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);} }
+@media (max-width:600px){ .grid { grid-template-columns:1fr; } .media { height:220px; } }
+  </style>
+</head>
+<body dir='rtl'>
+  <header><h1>👁️ Eye of Egypt</h1><div class="subtitle">الموسوعة الشاملة لكنوز مصر</div></header>
+  <main class='grid' id='attractions'></main>
+  <footer style="text-align:center;margin-top:50px;padding:20px;border-top:1px solid #334155;color:var(--text-secondary);">جميع الحقوق محفوظة © 2025 Eye of Egypt</footer>
+  <script>
+const attractions = [
+  { name: 'أهرامات الجيزة', short: 'عجيبة الدنيا القديمة.', full: 'تتكون من الهرم الأكبر (خوفو)، خفرع، ومنقرع. بنيت قبل 4500 عام.', img: 'https://upload.wikimedia.org/wikipedia/commons/a/af/All_Gizah_Pyramids.jpg', lat:29.9792,lng:31.1342 },
+  { name: 'أبو الهول', short: 'الحارس الأسطوري برأس إنسان وجسد أسد.', full: 'تمثال ضخم منحوت من صخرة واحدة.', img: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Great_Sphinx_of_Giza_-_20080716a.jpg', lat:29.9753,lng:31.1376 },
+  { name: 'قلعة صلاح الدين', short: 'الحصن المنيع ومسجد المرمر.', full: 'تقع على تلة المقطم وتضم مسجد محمد علي.', img: 'https://egymonuments.gov.eg/media/2329/11.jpg', lat:30.0286,lng:31.2625 },
+  { name: 'معبد الكرنك', short: 'أكبر مجمع ديني.', full: 'استمر بناؤه 1500 عام، يضم 134 عموداً.', img: 'https://upload.wikimedia.org/wikipedia/commons/6/60/Temple_de_Louxor_68.jpg', lat:25.7196,lng:32.6586 },
+  { name: 'معبد الأقصر', short: 'درة معابد البر الشرقي.', full: 'بناه أمنحتب الثالث ورمسيس الثاني.', img: 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Luxor_Temple_at_night.jpg', lat:25.7001,lng:32.6397 },
+  { name: 'وادي الملوك', short: 'مقبرة توت عنخ آمون.', full: 'يضم مقابر محفورة في الجبل.', img: 'https://upload.wikimedia.org/wikipedia/commons/0/05/Valley_of_the_Kings_Panorama.jpg', lat:25.7423,lng:32.6019 },
+];
+const container=document.getElementById('attractions');
+function createCard(item,index){
+  const card=document.createElement('article'); card.className='card';
+  const panoUrl=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${item.lat},${item.lng}`;
+  const dirUrl=`https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`;
+  const mapEmbedUrl=`https://maps.google.com/maps?q=${item.lat},${item.lng}&t=k&z=15&ie=UTF8&output=embed`;
+  card.innerHTML=`
+    <img class='media' src='${item.img}' alt='${item.name}' loading='lazy'>
+    <div class='card-body'>
+      <h2 class='card-title'>${item.name}</h2>
+      <div class='card-short'>${item.short}</div>
+      <div class='actions'>
+        <button class='btn btn-toggle btn-full-width' onclick="toggleDetails(${index})">📝 عرض التفاصيل</button>
+        <a class='btn btn-pano' target='_blank' href='${panoUrl}'>🌐 عرض 360°</a>
+        <a class='btn secondary' target='_blank' href='${dirUrl}'>📍 الاتجاهات</a>
+        <div class='more-details' id='details-${index}'>
+          <div class='full-desc'>${item.full}</div>
+          <div class="map-container"><iframe src="${mapEmbedUrl}" loading="lazy"></iframe></div>
+        </div>
+      </div>
+    </div>
+  `;
+  return card;
+}
+function toggleDetails(index){
+  const details=document.getElementById(`details-${index}`);
+  const btn=details.parentElement.querySelector('.btn-toggle');
+  if(details.style.display==='block'){ details.style.display='none'; btn.textContent='📝 عرض التفاصيل'; }
+  else { document.querySelectorAll('.more-details').forEach(el=>el.style.display='none'); document.querySelectorAll('.btn-toggle').forEach(b=>b.textContent='📝 عرض التفاصيل'); details.style.display='block'; btn.textContent='❌ إخفاء'; }
+}
+attractions.forEach((item,index)=>container.appendChild(createCard(item,index)));
+  </script>
+</body>
+</html>

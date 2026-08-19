@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المساعدين السياحيين</title>
+<style>
+:root {
+  --dark-bg:#121212; --card-bg:#1f1f1f; --gold:#ffc107;
+  --blue-royal:#4a6fa5; --white:#e0e0e0; --border-color:#333;
+}
+body {background-color:var(--dark-bg); color:var(--white); font-family:'Segoe UI', Tahoma, sans-serif; margin:0; padding:0; direction:rtl;}
+.header {display:flex; justify-content:space-between; padding:15px; background:#1f1f1f; border-bottom:1px solid var(--border-color);}
+.header h1 {margin:0; color:var(--gold);}
+.filter-container {padding:10px 20px; background:#222; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.filter-container label {margin-right:5px; color:#ccc;}
+.filter-container select {padding:5px 10px; border-radius:5px; border:none; background:#333; color:#fff; border:1px solid var(--blue-royal);}
+.cards-grid {display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; padding:20px;}
+.assistant-card {background:var(--card-bg); border-radius:10px; padding:20px; border:1px solid var(--blue-royal); transition:0.3s; display:flex; flex-direction:column;}
+.assistant-card:hover {border-color:var(--gold); transform:translateY(-3px);}
+.assistant-card .profile-img {width:70px; height:70px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); margin-left:15px;}
+.card-header {display:flex; align-items:center; margin-bottom:15px;}
+.card-header h3 {color:var(--gold); margin:0;}
+.rating {color:var(--gold); margin-top:5px;}
+button.contact-btn {padding:10px; width:100%; border:none; border-radius:5px; margin-top:10px; cursor:pointer; background:var(--blue-royal); color:#fff; font-weight:bold;}
+button.contact-btn:hover {background:#3b5b82;}
+#loader {display:none;text-align:center;padding:50px;font-size:1.2em;color:var(--gold);}
+#noDataMsg {display:none;text-align:center;padding:50px;font-size:1.2em;color:#aaa;}
+.btn-back {background-color:var(--blue-royal); color:#fff; padding:8px 15px; border-radius:6px; text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 id="pageTitle">المساعدون السياحيون</h1>
+  <a href="main_services.html" style="color:white;text-decoration:none;">🔙 الرئيسية</a>
+</div>
+<div class="filter-container">
+  <label for="ratingFilter">فلتر التقييم:</label>
+  <select id="ratingFilter"><option value="0">الكل</option><option value="1">1⭐</option><option value="2">2⭐</option><option value="3">3⭐</option><option value="4">4⭐</option><option value="5">5⭐</option></select>
+  <label for="typeFilter">فلتر التخصص:</label>
+  <select id="typeFilter"><option value="all">الكل</option><option value="ديني">ديني</option><option value="ترفيهي">ترفيهي</option><option value="ثقافي">ثقافي</option><option value="تجاري">تجاري</option></select>
+</div>
+<div id="loader">... جاري تحميل البيانات</div>
+<div id="noDataMsg">لا يوجد مساعدين متاحين حالياً</div>
+<div id="assistantCardsGrid" class="cards-grid"></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
+  authDomain: "tourguideapp-313c1.firebaseapp.com",
+  databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com",
+  projectId: "tourguideapp-313c1",
+  storageBucket: "tourguideapp-313c1.appspot.com",
+  messagingSenderId: "1036127588385",
+  appId: "1:1036127588385:web:d144dba8f70fe094395360"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const ROLES = {
+  GUIDE: {key:"GUIDE", name:"مرشد سياحي", dbKey:'assistants_guides'},
+  COMPANION: {key:"COMPANION", name:"مرافق لذوي الاحتياجات", dbKey:'assistants_companions'},
+  DRIVER: {key:"DRIVER", name:"سائق نقل خاص", dbKey:'assistants_drivers'}
+};
+function renderStars(r){return '⭐'.repeat(r)+'☆'.repeat(5-r);}
+function getMajorityRating(comments){if(!comments||comments.length===0)return 5; const counts={}; comments.forEach(c=>counts[c.rating]=(counts[c.rating]||0)+1); let max=0,majority=5; for(const r in counts){if(counts[r]>max){max=counts[r]; majority=parseInt(r);}} return majority;}
+
+// ===================== جلب مباشر من Firebase بدون localStorage =====================
+async function fetchAssistants(roleKey){
+  document.getElementById('loader').style.display='block';
+  document.getElementById('noDataMsg').style.display='none';
+  const dbRefs = roleKey ? [ref(db, ROLES[roleKey].dbKey)] : [ref(db,'assistants_guides'), ref(db,'assistants_companions'), ref(db,'assistants_drivers')];
+  let allData = [];
+  for(const r of dbRefs){
+    const snap = await get(r);
+    if(snap.exists()) allData.push(...Object.values(snap.val()));
+  }
+  document.getElementById('loader').style.display='none';
+  return allData;
+}
+
+async function displayAssistants(roleKey,minRating=0,typeFilter='all'){
+  const grid = document.getElementById('assistantCardsGrid');
+  grid.innerHTML='';
+  let allData = await fetchAssistants(roleKey);
+  let filteredData = allData.filter(a=>{
+    let rating = 5;
+    try {
+      const comments = JSON.parse(localStorage.getItem(`comments_${a.appId}`))||[];
+      rating = getMajorityRating(comments);
+    } catch(e){}
+    if(rating<minRating) return false;
+    if(typeFilter!=='all' && a.guideType!==typeFilter && a.specialization!==typeFilter) return false;
+    return true;
+  });
+  if(filteredData.length===0){ document.getElementById('noDataMsg').style.display='block'; return; } 
+  else { document.getElementById('noDataMsg').style.display='none'; }
+  filteredData.forEach(a=>{
+    const comments = JSON.parse(localStorage.getItem(`comments_${a.appId}`))||[];
+    const rating = getMajorityRating(comments);
+    const card = document.createElement('div'); card.className='assistant-card';
+    
+    // ========== إصلاح الصورة ==========
+    // التحقق من وجود صورة صالحة (تبدأ بـ data:image) وإلا استخدم الافتراضية
+    const imgSrc = (a.img && typeof a.img === 'string' && a.img.startsWith('data:image')) 
+      ? a.img 
+      : 'https://via.placeholder.com/70/4a6fa5/ffffff?text=👤'; // صورة افتراضية مستضافة
+
+    let details='';
+    if(a.groupLimit){ details+=`<p>التخصص: ${a.guideType||'عام'}</p><p>حد المجموعة: ${a.groupLimit}</p><p>سعر اليوم: ${a.price} جنيه</p>`;}
+    else if(a.specialization){ details+=`<p>التخصص: ${a.specialization}</p><p>سعر اليوم: ${a.priceDay}</p><p>سعر الساعة: ${a.priceHour}</p>`;}
+    else if(a.cityPrice){ details+=`<p>أجرة المدينة: ${a.cityPrice}</p><p>أجرة خارج المدينة: ${a.outCityPrice}</p>`;}
+
+    card.innerHTML=`
+      <div class="card-header">
+        <img src="${imgSrc}" class="profile-img" alt="${a.name}">
+        <div>
+          <h3>${a.name}</h3>
+          <div class="rating">${renderStars(rating)}</div>
+        </div>
+      </div>
+      <div style="flex:1;">${details}</div>
+      <button class="contact-btn" onclick="startChat('${a.appId}','${a.name}')">💬 تواصل الآن</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+window.startChat = function(code,name){window.location.href=`chat_page.html?code=${code}&name=${encodeURIComponent(name)}`;};
+document.getElementById('ratingFilter').addEventListener('change',async(e)=>{ const minRating=parseInt(e.target.value); const typeFilter=document.getElementById('typeFilter').value; const roleKey=new URLSearchParams(window.location.search).get('role'); await displayAssistants(roleKey,minRating,typeFilter); });
+document.getElementById('typeFilter').addEventListener('change',async(e)=>{ const typeFilter=e.target.value; const minRating=parseInt(document.getElementById('ratingFilter').value); const roleKey=new URLSearchParams(window.location.search).get('role'); await displayAssistants(roleKey,minRating,typeFilter); });
+document.addEventListener('DOMContentLoaded',async()=>{ const roleKey=new URLSearchParams(window.location.search).get('role'); await displayAssistants(roleKey); });
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل الطوارئ</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; --green:#4caf50; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; }
+.container { max-width:1200px; margin:auto; padding:20px; }
+h1 { color:var(--gold); text-align:center; }
+.header-controls { display:flex; justify-content:center; gap:15px; margin-bottom:20px; flex-wrap:wrap; }
+.btn-back, .btn-primary { padding:10px 15px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+.btn-back { background:#555; color:#fff; }
+.btn-primary { background:var(--blue-royal); color:#fff; }
+.btn-danger { background:var(--red); color:#fff; }
+.requests-table { width:100%; border-collapse:collapse; margin-top:15px; }
+.requests-table th, .requests-table td { border:1px solid var(--border); padding:12px; text-align:center; }
+.requests-table th { background:var(--blue-royal); color:#fff; }
+</style>
+</head>
+<body>
+<div class="header-controls">
+    <a href="manager_dashboard.html" class="btn-back">🔙 لوحة المدير</a>
+    <button onclick="displayEmergencyLogs()" class="btn-primary">🔄 تحديث</button>
+    <button onclick="confirmDeleteAll()" class="btn-danger">🗑️ حذف الكل</button>
+</div>
+<div class="container">
+    <h1>سجل بلاغات الطوارئ 🚨</h1>
+    <table class="requests-table"><thead><tr><th>ID</th><th>الاسم</th><th>الهاتف</th><th>الوقت</th><th>الموقع</th><th>الإجراء</th></tr></thead><tbody id="emergencyTableBody"></tbody></table>
+    <p id="noLogsMessage" style="text-align:center; color:var(--gold); margin-top:50px; display:none;">لا توجد بلاغات.</p>
+</div>
+<script>
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.firebasestorage.app", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+firebase.initializeApp(firebaseConfig); const db=firebase.database();
+function displayEmergencyLogs(){
+    const tbody=document.getElementById('emergencyTableBody'); const noMsg=document.getElementById('noLogsMessage'); tbody.innerHTML='';
+    db.ref('emergencies').once('value').then(snap=>{ const logs=snap.val(); if(!logs){ noMsg.style.display='block'; return; } noMsg.style.display='none'; Object.values(logs).forEach(log=>{ const tr=document.createElement('tr'); let loc=log.location&&log.location.gMapsURL?`<a href="${log.location.gMapsURL}" target="_blank" style="background:var(--red);color:#fff;padding:4px 8px;border-radius:4px;text-decoration:none;">🔴 عرض</a>`:log.location||'غير محدد'; tr.innerHTML=`<td>${log.id}</td><td>${log.name||'غير معروف'}</td><td>${log.phone||'غير محدد'}</td><td>${log.time}</td><td>${loc}</td><td><button onclick="removeLog('${log.id}')" style="background:var(--red);color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">🗑️ حذف</button></td>`; tbody.appendChild(tr); }); });
+}
+window.removeLog=function(id){ if(confirm('حذف البلاغ؟')){ db.ref('emergencies/'+id).remove().then(()=>{ displayEmergencyLogs(); }); } };
+window.confirmDeleteAll=function(){ if(confirm('حذف جميع السجلات؟')){ db.ref('emergencies').remove().then(()=>{ displayEmergencyLogs(); }); } };
+document.addEventListener('DOMContentLoaded',displayEmergencyLogs);
+</script>
+</body>
+</html>

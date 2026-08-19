@@ -1,0 +1,100 @@
+<!DOCTYPE html>    
+<html lang="ar" dir="rtl">    
+<head>    
+    <meta charset="UTF-8">    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <title>خدمات السائح الرئيسية</title>    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>    
+    <style>    
+:root {
+    --bg-dark: #121212; --bg-card: #1f1f1f; --gold: #ffc107;
+    --blue-royal: #4a6fa5; --text-light: #e0e0e0; --border-color: #333; --red: #cf6679;
+}
+body { background-color: var(--bg-dark); color: var(--text-light); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+.container { max-width: 1200px; margin: auto; padding: 20px; }
+h1 { text-align: center; color: var(--gold); }
+.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 30px; }
+.service-card { background-color: var(--bg-card); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--blue-royal); cursor: pointer; transition: all 0.3s; text-decoration: none; color: var(--text-light); font-weight: bold; }
+.service-card:hover { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 0 15px rgba(255,193,7,0.2); }
+.service-card span { display: block; font-size: 2em; margin-bottom: 10px; }
+.btn-emergency { position: fixed; bottom: 20px; left: 20px; font-size: 2em; padding: 10px 15px; background-color: var(--red); color: #fff; border: none; border-radius: 50%; cursor: pointer; z-index: 1000; }
+.header-controls { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+.btn-back, .btn-primary { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.btn-back { background-color: #555; color: #fff; }
+.btn-primary { background-color: var(--blue-royal); color: #fff; }
+.btn-primary:hover { background-color: #3b5b82; }
+.modal { position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; }
+.modal-content { background-color: var(--bg-card); padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; border: 1px solid var(--gold); }
+.close-btn { float: left; font-size: 1.5em; font-weight: bold; cursor: pointer; color: #fff; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: #2a2a2a; color: #fff; }
+    </style>    
+</head>    
+<body>    
+    <button onclick="handleEmergency()" class="btn-emergency">🚨</button>    
+    <div class="header-controls">    
+        <button onclick="logoutTourist()" class="btn-back" style="background-color: #cf6679;">🚪 خروج</button>    
+        <button onclick="openComplaintModal()" class="btn-back" style="background-color: var(--blue-royal);">📝 شكوى / اقتراح</button>    
+    </div>    
+    <div class="container">    
+        <h1>مرحباً بك في مصر! 👋</h1>    
+        <div class="services-grid">    
+            <a href="eye.html" class="service-card"><span>🗺️</span> المعالم السياحية</a>    
+            <a href="assistants_cards.html?role=GUIDE" class="service-card"><span>👤</span> المرشدين</a>    
+            <a href="assistants_cards.html?role=COMPANION" class="service-card"><span>♿</span> مرافقو الاحتياجات</a>    
+            <a href="assistants_cards.html?role=DRIVER" class="service-card"><span>🚗</span> خدمات التنقل</a>    
+            <a href="hotels.html" class="service-card"><span>🏨</span> الفنادق</a>    
+            <a href="restaurants.html" class="service-card"><span>🍴</span> المطاعم</a>    
+            <a href="stores.html" class="service-card"><span>🛍️</span> المحلات</a>    
+            <a href="gemini_chat_bot.html" class="service-card" style="border-color:var(--gold);"><span>🤖</span> الشات السياحي</a>       
+        </div>    
+    </div>    
+    <div id="complaintModal" class="modal" style="display: none;">    
+        <div class="modal-content">    
+            <span class="close-btn" onclick="closeModal('complaintModal')">×</span>    
+            <h2>📝 شكوى أو اقتراح</h2>    
+            <form id="complaintForm">    
+                <div class="form-group"><label>الاسم:</label><input type="text" id="complaintName" required></div>    
+                <div class="form-group"><label>رقم الهاتف:</label><input type="tel" id="complaintPhone" required></div>    
+                <div class="form-group"><label>النوع:</label><select id="complaintType" required><option value="شكوى">شكوى</option><option value="اقتراح">اقتراح</option></select></div>    
+                <div class="form-group"><label>التفاصيل:</label><textarea id="complaintMessage" rows="4" required></textarea></div>    
+                <button type="submit" class="btn-primary">💾 إرسال</button>    
+                <p id="complaintMessageResult" style="margin-top: 10px;"></p>    
+            </form>    
+        </div>    
+    </div>  
+    <div id="emergencyModal" class="modal" style="display:none;">  
+        <div class="modal-content">  
+            <span class="close-btn" onclick="closeModal('emergencyModal')">×</span>  
+            <h2>🚨 بلاغ طارئ</h2>  
+            <form id="emergencyForm">  
+                <div class="form-group"><label>الاسم:</label><input type="text" id="emgName" required></div>  
+                <div class="form-group"><label>رقم الهاتف:</label><input type="tel" id="emgPhone" required></div>  
+                <button type="submit" class="btn-primary">📡 إرسال البلاغ</button>  
+                <p id="emgResult" style="margin-top:10px;"></p>  
+            </form>  
+        </div>  
+    </div>    
+    <script>    
+const ticket = sessionStorage.getItem('currentTicket'); if(!ticket){ alert("⚠️ يجب تسجيل الدخول."); window.location.href = 'index.html'; }
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.firebasestorage.app", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+firebase.initializeApp(firebaseConfig); const db = firebase.database();
+function closeModal(id){ document.getElementById(id).style.display = 'none'; }
+function openComplaintModal(){ document.getElementById('complaintModal').style.display = 'block'; }
+function handleEmergency(){ document.getElementById('emergencyModal').style.display = 'flex'; }
+function logoutTourist(){ sessionStorage.removeItem('currentTicket'); window.location.href = 'index.html'; }
+document.getElementById("complaintForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const data = { id: Date.now().toString(), name: document.getElementById("complaintName").value.trim(), phone: document.getElementById("complaintPhone").value.trim(), type: document.getElementById("complaintType").value, message: document.getElementById("complaintMessage").value.trim(), ticketCode: sessionStorage.getItem("currentTicket"), time: new Date().toLocaleString("ar-EG", { timeZone: "Africa/Cairo" }) };
+    db.ref("complaints/" + data.id).set(data).then(()=>{ document.getElementById("complaintMessageResult").style.color = "lightgreen"; document.getElementById("complaintMessageResult").textContent = "✔️ تم الإرسال"; }).catch(()=>{ document.getElementById("complaintMessageResult").style.color = "red"; document.getElementById("complaintMessageResult").textContent = "❌ خطأ"; });
+});
+document.getElementById("emergencyForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const logData = { id: Date.now().toString(), name: document.getElementById("emgName").value.trim(), phone: document.getElementById("emgPhone").value.trim(), status: "جديد", ticketCode: sessionStorage.getItem("currentTicket"), time: new Date().toLocaleString("ar-EG", { timeZone: "Africa/Cairo" }) };
+    db.ref("emergencies/" + logData.id).set(logData).then(()=>{ document.getElementById("emgResult").style.color = "lightgreen"; document.getElementById("emgResult").textContent = "✔️ تم الإرسال"; setTimeout(()=>{ alert("سيتم تحويلك للاتصال: 999"); window.location.href = "tel:999"; }, 800); }).catch(()=>{ document.getElementById("emgResult").style.color = "red"; document.getElementById("emgResult").textContent = "❌ فشل"; });
+});
+    </script>    
+</body>    
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إضافة مكان</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --green:#4caf50; --red:#cf6679; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; }
+.container { max-width:600px; margin:40px auto; padding:20px; background:var(--card-bg); border-radius:12px; border:1px solid var(--gold); }
+h2 { color:var(--gold); text-align:center; border-bottom:2px solid var(--blue-royal); padding-bottom:10px; }
+label { display:block; margin:10px 0 5px; font-weight:bold; }
+input, textarea, select { width:100%; padding:10px; border-radius:5px; border:1px solid var(--blue-royal); background:#2a2a2a; color:#fff; margin-bottom:10px; }
+button { padding:10px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; color:#fff; }
+.btn-add { background:var(--blue-royal); width:100%; }
+.btn-add:hover { background:#3b5b82; }
+.btn-manage { background:var(--gold); color:var(--bg-dark); width:100%; margin-top:10px; }
+.btn-manage:hover { background:#e0a800; }
+#previewImg { max-width:100%; margin-top:10px; display:none; border-radius:5px; border:2px solid var(--gold); }
+.success { margin-top:15px; padding:10px; border-radius:5px; text-align:center; font-weight:bold; display:none; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>إضافة مكان جديد</h2>
+<label>نوع المكان:</label>
+<select id="placeType">
+    <option value="hotel">فندق</option>
+    <option value="restaurant">مطعم</option>
+    <option value="store">محل تجاري</option>
+</select>
+<label>اسم المكان:</label><input type="text" id="placeName" placeholder="اكتب اسم المكان">
+<label>اختر صورة:</label><input type="file" id="placeFile" accept="image/*">
+<img id="previewImg" />
+<label>أو رابط الصورة (اختياري):</label><input type="text" id="placeImage" placeholder="رابط الصورة">
+<label>رابط Google Maps:</label><input type="text" id="placeMap" placeholder="رابط الخريطة">
+<div id="hotelFields">
+    <label>سعر الليلة:</label><input type="text" id="priceNight">
+    <label>سعر الأسبوع:</label><input type="text" id="priceWeek">
+    <label>سعر الشهر:</label><input type="text" id="priceMonth">
+    <label>الإقامة تشمل:</label><textarea id="hotelExtras" rows="2"></textarea>
+</div>
+<div id="otherFields">
+    <label>تصنيف المكان:</label><input type="text" id="placeCategory" placeholder="مثال: ملابس، سمك">
+    <label>خدمة التوصيل:</label>
+    <select id="deliveryService"><option value="yes">نعم</option><option value="no">لا</option></select>
+    <label>معلومات أخرى:</label><textarea id="otherInfo" rows="2" placeholder="معلومات إضافية"></textarea>
+</div>
+<button class="btn-add" id="addPlaceBtn">إضافة المكان</button>
+<div class="success" id="successMsg"></div>
+<button class="btn-manage" id="goToManage">الذهاب لصفحة الطلبات</button>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, set, push } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const placeType=document.getElementById('placeType'), hotelFields=document.getElementById('hotelFields'), otherFields=document.getElementById('otherFields'), addBtn=document.getElementById('addPlaceBtn'), successMsg=document.getElementById('successMsg'), goToManage=document.getElementById('goToManage'), placeFile=document.getElementById('placeFile'), previewImg=document.getElementById('previewImg');
+let placeBase64='';
+function toggleFields(){ hotelFields.style.display=placeType.value==='hotel'?'block':'none'; otherFields.style.display=(placeType.value==='restaurant'||placeType.value==='store')?'block':'none'; }
+placeType.addEventListener('change', toggleFields); toggleFields();
+placeFile.addEventListener('change', (e)=>{ const file=e.target.files[0]; if(file){ const reader=new FileReader(); reader.onload=(ev)=>{ placeBase64=ev.target.result; previewImg.src=placeBase64; previewImg.style.display='block'; }; reader.readAsDataURL(file); } });
+function generateCode(){ const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r=''; for(let i=0;i<6;i++) r+=chars.charAt(Math.floor(Math.random()*chars.length)); return r; }
+function generatePassword(){ const chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r=''; for(let i=0;i<8;i++) r+=chars.charAt(Math.floor(Math.random()*chars.length)); return r; }
+addBtn.addEventListener('click', async ()=>{
+    const type=placeType.value; const name=document.getElementById('placeName').value.trim(); const img=placeBase64||document.getElementById('placeImage').value.trim(); const map=document.getElementById('placeMap').value.trim();
+    if(!name||!img){ alert('يرجى تعبئة الاسم والصورة'); return; }
+    successMsg.style.display='block'; successMsg.style.color='var(--gold)'; successMsg.textContent='⏳ جاري المعالجة...';
+    let itemData={name, photoBase64: img, gmapsLink: map, code: generateCode(), password: generatePassword()};
+    if(type==='hotel'){ itemData.priceNight=document.getElementById('priceNight').value.trim(); itemData.priceWeek=document.getElementById('priceWeek').value.trim(); itemData.priceMonth=document.getElementById('priceMonth').value.trim(); itemData.extras=document.getElementById('hotelExtras').value.trim(); }
+    else { itemData.category=document.getElementById('placeCategory').value.trim(); itemData.delivery=document.getElementById('deliveryService').value; itemData.otherInfo=document.getElementById('otherInfo').value.trim(); }
+    const collection={hotel:'hotels', restaurant:'restaurants', store:'stores'}[type];
+    try{ const newRef=push(ref(db, collection)); await set(newRef, itemData); successMsg.style.color='var(--green)'; successMsg.innerHTML=`✅ تم الحفظ!<br>كود: <strong>${itemData.code}</strong><br>كلمة السر: <strong>${itemData.password}</strong>`; placeBase64=''; previewImg.style.display='none'; document.getElementById('placeName').value=''; document.getElementById('placeImage').value=''; document.getElementById('placeMap').value=''; document.getElementById('priceNight').value=''; document.getElementById('priceWeek').value=''; document.getElementById('priceMonth').value=''; document.getElementById('hotelExtras').value=''; document.getElementById('placeCategory').value=''; document.getElementById('otherInfo').value=''; } catch(err){ successMsg.style.color='var(--red)'; successMsg.textContent='❌ فشل الحفظ'; }
+});
+goToManage.onclick=()=>{ window.location.href='orders_page.html'; };
+</script>
+</body>
+</html>

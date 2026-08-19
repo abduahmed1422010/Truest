@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل دخول المدير</title>
+    <style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
+.login-container { background:var(--card-bg); padding:30px 40px; border-radius:8px; border:1px solid var(--gold); width:100%; max-width:400px; }
+h1 { text-align:center; color:var(--gold); margin-bottom:25px; }
+.form-group { margin-bottom:20px; }
+.form-group label { display:block; margin-bottom:5px; }
+.form-group input { width:100%; padding:10px; border-radius:4px; border:1px solid var(--blue-royal); background:#2a2a2a; color:#fff; }
+.btn-login { width:100%; padding:10px; border:none; border-radius:6px; background:var(--blue-royal); color:#fff; font-weight:bold; cursor:pointer; }
+.btn-login:hover { background:#3b5b82; }
+.error-msg { margin-top:15px; color:var(--red); text-align:center; display:none; }
+</style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>تسجيل دخول المدير</h1>
+        <form id="loginForm">
+            <div class="form-group"><label>اسم المستخدم:</label><input type="text" id="username" required></div>
+            <div class="form-group"><label>كلمة المرور:</label><input type="password" id="password" required></div>
+            <button type="submit" class="btn-login">تسجيل الدخول</button>
+            <p id="errorMsg" class="error-msg">بيانات غير صحيحة!</p>
+        </form>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            const u=document.getElementById('username').value.trim(), p=document.getElementById('password').value.trim();
+            if(u==="Abdu" && p==="1422010"){ window.location.href="manager_dashboard.html"; }
+            else { document.getElementById('errorMsg').style.display='block'; }
+        });
+    </script>
+</body>
+</html>

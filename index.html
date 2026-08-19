@@ -1,151 +1,103 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الصفحة الرئيسية</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 15vh;
-        }
-        .logo-placeholder {
-            font-size: 2em;
-            color: var(--gold);
-            margin-bottom: 40px;
-        }
-        .code-entry-form {
-            background-color: var(--card-bg);
-            padding: 30px;
-            border-radius: 8px;
-            margin-top: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-        /* إخفاء الرأس في الصفحة الرئيسية */
-        header.app-header {
-            display: none !important; 
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة السياحة الرقمية</title>
+<style>
+:root {
+    --dark-bg: #121212;
+    --card-bg: #1f1f1f;
+    --gold: #ffc107;
+    --blue-royal: #4a6fa5;
+    --white: #e0e0e0;
+    --border-color: #333333;
+    --red-emergency: #cf6679;
+}
+* { box-sizing:border-box; margin:0; padding:0; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body {
+    background: var(--dark-bg);
+    color: var(--white);
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+.container {
+    max-width: 450px;
+    width: 100%;
+    padding: 30px;
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border:1px solid var(--border-color);
+    text-align:center;
+}
+.logo { font-size:2em; color: var(--gold); font-weight:bold; margin-bottom: 25px; }
+p { margin-bottom:20px; color:#b0b0b0; }
+input[type="text"] {
+    width:100%; padding:12px; border-radius:6px; border:1px solid var(--blue-royal);
+    background-color:#2a2a2a; color:var(--white); margin-bottom:15px; font-size:1em;
+}
+input:focus { border-color: var(--gold); outline:none; box-shadow:0 0 8px rgba(255,193,7,0.5); }
+button {
+    width:100%; padding:12px; border:none; border-radius:6px; font-size:1em;
+    font-weight:bold; cursor:pointer; margin-bottom:15px; transition: background-color 0.3s;
+}
+#loginBtn { background-color: var(--blue-royal); color:white; }
+#loginBtn:hover { background-color:#3b5b82; }
+#message-box { min-height:40px; margin-bottom:10px; padding:10px; border-radius:6px; font-weight:bold; text-align:center; color:white; visibility:hidden; }
+#joinBtn {
+    display:inline-block; text-decoration:none; background-color: var(--blue-royal);
+    color:white; padding:12px 25px; border-radius:6px; font-weight:bold;
+    transition: background-color 0.3s;
+}
+#joinBtn:hover { background-color:#3b5b82; }
+</style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="logo-placeholder">🇦🇪 بوابة المساعد السياحي</div>
-
-        <h1>اهلا بيك انضم كمساعد سياحي</h1>
-        
-        <div style="margin-top: 30px;">
-            <a href="join.html" class="btn btn-primary" style="padding: 15px 40px; font-size: 1.2em;">
-                ⭐ انضم كمساعد سياحي
-            </a>
-        </div>
-        
-        <div class="code-entry-form">
-            <h2>دخول المستخدمين (كود التذكرة)</h2>
-            <form id="ticketCodeForm">
-                <input type="text" name="code" placeholder="أدخل كود التذكرة" required style="text-align: center;">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">استخدام الكود والدخول</button>
-            </form>
-            <div id="codeEntryResult" style="margin-top: 10px;"></div>
-        </div>
-        
-        <div class="code-entry-form" style="margin-top: 20px;">
-            <p style="margin-bottom: 10px; color: var(--gold);">للاقتراحات أو الشكاوى:</p>
-            <button class="btn btn-secondary" onclick="openComplaintModal()" style="width: 100%;">📧 إرسال شكوى / اقتراح</button>
-        </div>
-
-    </div>
-    
-    <div id="complaintModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
-        <form id="complaintForm" style="background:var(--card-bg); padding:30px; border-radius:10px; width:90%; max-width:400px;">
-            <h2>📧 شكوى / اقتراح</h2>
-            <input type="text" name="name" placeholder="الاسم" required>
-            <input type="text" name="phone" placeholder="رقم الهاتف للتواصل" required>
-            <textarea name="message" placeholder="اكتب اقتراحك أو شكواك هنا" rows="5" required></textarea>
-            <button type="submit" class="btn btn-primary">إرسال</button>
-            <button type="button" onclick="closeComplaintModal()" class="btn btn-secondary" style="background-color:#555;">إلغاء</button>
-            <div id="complaintResult" style="margin-top: 10px;"></div>
-        </form>
-    </div>
-
-    <footer>
-        جميع الحقوق محفوظة ل© عبدالرحمن احمد
-    </footer>
-    
-    <script>
-        function openComplaintModal() {
-            document.getElementById('complaintModal').style.display = 'flex';
+<div class="container">
+    <div class="logo"> التطبيق الرقمي المصري لخدمة السياح 🇦🇪</div>
+    <p>الرجاء إدخال كود تذكرتك للدخول إلى خدمات السائح.</p>
+    <div id="message-box"></div>
+    <input type="text" id="ticketCode" placeholder="أدخل كود التذكرة">
+    <button id="loginBtn">دخول ➡️</button>
+    <a id="joinBtn" href="job_application.html">انضم كمساعد سياحي 🤝</a>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic",
+  authDomain: "tourguideapp-313c1.firebaseapp.com",
+  databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com",
+  projectId: "tourguideapp-313c1",
+  storageBucket: "tourguideapp-313c1.firebasestorage.app",
+  messagingSenderId: "1036127588385",
+  appId: "1:1036127588385:web:d144dba8f70fe094395360"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const messageBox = document.getElementById('message-box');
+document.getElementById('loginBtn').addEventListener('click', async () => {
+    const code = document.getElementById("ticketCode").value.trim();
+    if(!code){ messageBox.style.backgroundColor = '#cf6679'; messageBox.textContent = "❌ يرجى إدخال الكود."; messageBox.style.visibility = 'visible'; return; }
+    messageBox.style.backgroundColor = '#4a6fa5'; messageBox.textContent = "⏳ جاري التحقق..."; messageBox.style.visibility = 'visible';
+    try {
+        const snapshot = await get(ref(db, 'ticketCodes'));
+        const tickets = snapshot.exists() ? snapshot.val() : {};
+        const now = new Date();
+        const validTicket = Object.values(tickets).find(t => t.code === code && new Date(t.expiryDate) > now);
+        if(validTicket){
+            sessionStorage.setItem('currentTicket', code);
+            messageBox.style.backgroundColor = '#4caf50'; messageBox.textContent = "✅ التذكرة صحيحة، جاري التوجيه...";
+            setTimeout(() => { window.location.href = 'main_services.html'; }, 1500);
+        } else {
+            messageBox.style.backgroundColor = '#cf6679'; messageBox.textContent = "❌ التذكرة غير صحيحة أو منتهية.";
         }
-
-        function closeComplaintModal() {
-            document.getElementById('complaintModal').style.display = 'none';
-        }
-        
-        document.getElementById('complaintForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(document.getElementById('complaintForm'));
-            const data = Object.fromEntries(formData.entries());
-            const complaintResult = document.getElementById('complaintResult');
-            
-            try {
-                const res = await fetch('/api/submitComplaint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-                
-                if (result.success) {
-                    complaintResult.className = 'success';
-                    complaintResult.innerHTML = result.message;
-                    document.getElementById('complaintForm').reset();
-                    setTimeout(closeComplaintModal, 3000);
-                } else {
-                    complaintResult.className = 'error';
-                    complaintResult.innerHTML = result.message;
-                }
-            } catch (error) {
-                // رسالة الخطأ الجديدة للشكوى
-                complaintResult.className = 'error';
-                complaintResult.innerHTML = 'فشل الدخول، يرجى المحاولة مرة أخرى لاحقاً.';
-            }
-        });
-
-        document.getElementById('ticketCodeForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const code = document.getElementById('ticketCodeForm').code.value;
-            const resultDiv = document.getElementById('codeEntryResult');
-            
-            try {
-                const res = await fetch('/api/verifyTicketCode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    resultDiv.className = 'success';
-                    resultDiv.innerHTML = '✅ تم الدخول بنجاح. جاري التوجيه...';
-                    localStorage.setItem('userTicketCode', code);
-                    setTimeout(() => {
-                        window.location.href = 'user-dashboard.html';
-                    }, 1500);
-                } else {
-                    resultDiv.className = 'error';
-                    resultDiv.innerHTML = data.message;
-                }
-            } catch (error) {
-                // رسالة الخطأ الجديدة لكود التذكرة
-                resultDiv.className = 'error';
-                resultDiv.innerHTML = 'فشل الدخول، يرجى المحاولة مرة أخرى لاحقاً.';
-            }
-        });
-    </script>
+    } catch(err){ messageBox.style.backgroundColor = '#cf6679'; messageBox.textContent = "❌ حدث خطأ."; }
+});
+</script>
 </body>
 </html>

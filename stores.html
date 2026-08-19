@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المحلات التجارية</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --green:#4caf50; --orange:#ff9800; }
+body { font-family:Arial; background:var(--bg-dark); color:var(--text); margin:0; padding:0; }
+.container2 { max-width:900px; margin:40px auto; padding:20px; background:var(--card-bg); border-radius:12px; border:1px solid var(--border); }
+.container { max-width:1000px; margin:20px auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+.card { background:#1e1e1e; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; border:1px solid var(--blue-royal); transition:0.3s; }
+.card:hover { border-color:var(--gold); }
+.card img { width:100%; height:200px; object-fit:cover; }
+.card-content { padding:15px; flex:1; display:flex; flex-direction:column; }
+.card-content h3 { color:var(--gold); margin:0 0 8px; }
+.card-content p { margin:4px 0; font-size:14px; color:#ccc; }
+.card-content button { padding:8px; border:none; border-radius:5px; cursor:pointer; margin-top:5px; font-weight:bold; }
+.btn-order { background:var(--blue-royal); color:#fff; }
+.btn-dir { background:#3b5b82; color:#fff; }
+.btn-comments { background:var(--orange); color:#fff; }
+.rating { color:var(--gold); }
+.btn-back { background:var(--blue-royal); color:#fff; padding:8px 15px; border-radius:6px; text-decoration:none; display:inline-block; }
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); justify-content:center; align-items:center; z-index:1000; }
+.modal-content { background:#1e1e1e; padding:20px; border-radius:10px; width:90%; max-width:500px; color:#e0e0e0; border:1px solid var(--gold); position:relative; }
+.modal-content .close { position:absolute; top:10px; left:20px; cursor:pointer; font-size:24px; color:#fff; }
+.modal-content input, .modal-content textarea, .modal-content select { width:100%; padding:8px; border-radius:5px; border:1px solid var(--border); background:#2a2a2a; color:#fff; margin-bottom:10px; }
+.modal-content button { padding:8px 12px; border:none; border-radius:5px; cursor:pointer; font-weight:bold; color:#fff; }
+.submitOrder { background:var(--green); }
+.addComment { background:var(--orange); }
+.success-message { color:var(--green); font-weight:bold; text-align:center; display:none; }
+.comment-item { border-bottom:1px solid var(--border); padding:5px 0; }
+</style>
+</head>
+<body>
+<div class="container2">
+    <a href="main_services.html" class="btn-back">🏠 الرئيسية</a>
+    <h1 style="color:var(--gold);">المحلات التجارية 🛒</h1>
+    <div class="container" id="cardsContainer"></div>
+</div>
+<!-- مودال الطلب -->
+<div class="modal" id="orderModal">
+    <div class="modal-content">
+        <span class="close" id="modalClose">&times;</span>
+        <h3>طلب شراء</h3>
+        <p id="modalPlaceName" style="font-weight:bold;"></p>
+        <label>الاسم:</label><input type="text" id="userName" placeholder="اسمك">
+        <label>رقم الهاتف:</label><input type="text" id="userPhone" placeholder="رقم الهاتف">
+        <label>الطلب:</label><textarea id="userRequest" rows="3" placeholder="ما تريد شراءه"></textarea>
+        <label><input type="checkbox" id="shareLocationOrder"> مشاركة موقعي</label>
+        <button class="submitOrder" id="submitOrder">إرسال الطلب</button>
+        <div class="success-message" id="orderSuccess">تم الإرسال!</div>
+    </div>
+</div>
+<!-- مودال التعليقات -->
+<div class="modal" id="commentsModal">
+    <div class="modal-content">
+        <span class="close" id="commentsClose">&times;</span>
+        <h3>التعليقات</h3>
+        <div id="commentsList"></div>
+        <label>اسمك:</label><input type="text" id="commentName" placeholder="اسمك">
+        <label>تقييمك:</label>
+        <select id="commentRating"><option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option><option value="2">⭐⭐</option><option value="1">⭐</option></select>
+        <label>تعليقك:</label><textarea id="commentText" rows="3" placeholder="اكتب تعليقك"></textarea>
+        <button class="addComment" id="addCommentBtn">إضافة تعليق</button>
+    </div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get, push, set } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+const cards = document.getElementById('cardsContainer');
+const orderModal=document.getElementById('orderModal'), commentsModal=document.getElementById('commentsModal');
+const modalClose=document.getElementById('modalClose'), commentsClose=document.getElementById('commentsClose');
+const modalPlaceName=document.getElementById('modalPlaceName'), userName=document.getElementById('userName'), userPhone=document.getElementById('userPhone'), userRequest=document.getElementById('userRequest'), submitOrder=document.getElementById('submitOrder'), orderSuccess=document.getElementById('orderSuccess'), shareLoc=document.getElementById('shareLocationOrder');
+const commentsList=document.getElementById('commentsList'), commentName=document.getElementById('commentName'), commentText=document.getElementById('commentText'), commentRating=document.getElementById('commentRating'), addCommentBtn=document.getElementById('addCommentBtn');
+let currentCode=null;
+async function loadStores(){ const s=await get(ref(db,'stores')); return s.exists()?Object.entries(s.val()).map(([k,v])=>({code:k,...v})):[]; }
+async function getComments(code){ const s=await get(ref(db,'comments/'+code)); return s.exists()?Object.values(s.val()):[]; }
+async function saveComment(code,data){ const newRef=push(ref(db,'comments/'+code)); await set(newRef,data); }
+async function saveOrder(code,data){ const newRef=push(ref(db,'bookings/'+code)); await set(newRef,data); }
+function calcAvg(comments){ if(!comments.length) return 'غير مُقيّم'; const total=comments.reduce((s,c)=>s+parseInt(c.rating||0),0); return (total/comments.length).toFixed(1)+' ⭐'; }
+async function render(){
+    const stores=await loadStores(); cards.innerHTML='';
+    for(const place of stores){
+        const comments=await getComments(place.code); const avg=calcAvg(comments);
+        const card=document.createElement('div'); card.className='card';
+        card.innerHTML=`<img src="${place.photoBase64}" alt="${place.name}"><div class="card-content"><h3>${place.name}</h3><p class="rating">${avg}</p><p>التصنيف: ${place.category||'عام'}</p><p>التوصيل: ${place.delivery==='yes'?'متوفرة':'غير متوفرة'}</p><p>${place.otherInfo||''}</p><button class="btn-order" data-code="${place.code}">طلب شراء</button><button class="btn-dir" data-map="${place.gmapsLink||'#'}">الاتجاهات</button><button class="btn-comments" data-code="${place.code}">التعليقات</button></div>`;
+        cards.appendChild(card);
+    }
+    document.querySelectorAll('.btn-order').forEach(b=>{ b.onclick=()=>{ currentCode=b.dataset.code; modalPlaceName.textContent=b.closest('.card').querySelector('h3').textContent; orderModal.style.display='flex'; orderSuccess.style.display='none'; userName.value=''; userPhone.value=''; userRequest.value=''; shareLoc.checked=false; }; });
+    document.querySelectorAll('.btn-dir').forEach(b=>{ b.onclick=()=>{ const url=b.dataset.map; if(url && url!='#') window.open(url,'_blank'); }; });
+    document.querySelectorAll('.btn-comments').forEach(b=>{ b.onclick=async()=>{ currentCode=b.dataset.code; commentsModal.style.display='flex'; commentName.value=''; commentText.value=''; commentRating.value='5'; await renderComments(); }; });
+}
+async function renderComments(){ commentsList.innerHTML=''; const comments=await getComments(currentCode); if(!comments.length){ commentsList.innerHTML='<p>لا توجد تعليقات.</p>'; return; } comments.forEach(c=>{ const stars='⭐'.repeat(parseInt(c.rating||0)); const div=document.createElement('div'); div.className='comment-item'; div.innerHTML=`<p><strong>${c.name}</strong> ${stars} (${c.time})</p><p>${c.comment}</p>`; commentsList.appendChild(div); }); }
+modalClose.onclick=()=>orderModal.style.display='none'; commentsClose.onclick=()=>commentsModal.style.display='none';
+submitOrder.onclick=async()=>{ if(!userName.value||!userPhone.value||!userRequest.value){ alert('املأ جميع الحقول'); return; } await saveOrder(currentCode,{name:userName.value.trim(),phone:userPhone.value.trim(),request:userRequest.value.trim(),time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo'})}); orderSuccess.style.display='block'; userName.value=''; userPhone.value=''; userRequest.value=''; };
+addCommentBtn.onclick=async()=>{ if(!commentName.value||!commentText.value){ alert('املأ الاسم والتعليق'); return; } await saveComment(currentCode,{name:commentName.value.trim(),comment:commentText.value.trim(),rating:parseInt(commentRating.value),time:new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo'})}); commentName.value=''; commentText.value=''; commentRating.value='5'; renderComments(); render(); };
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>استعلام عن طلب</title>
+<style>
+:root { --bg-dark:#121212; --card-bg:#1f1f1f; --gold:#ffc107; --blue-royal:#4a6fa5; --text:#e0e0e0; --border:#333; --red:#cf6679; --green:#4caf50; --yellow:#ffeb3b; }
+body { background:var(--bg-dark); color:var(--text); font-family:Arial; margin:0; padding:0; }
+.header-controls { display:flex; justify-content:flex-end; padding:15px; background:#1f1f1f; border-bottom:1px solid var(--border); }
+.btn-back { background:var(--blue-royal); color:#fff; padding:8px 15px; border-radius:6px; text-decoration:none; margin-left:10px; }
+.inquiry-container { max-width:500px; margin:50px auto; padding:30px; background:var(--card-bg); border-radius:12px; border:1px solid var(--gold); }
+.result-box { margin-top:25px; padding:20px; border-radius:8px; border:1px solid var(--border); background:#2a2a2a; display:none; }
+.status-badge { display:inline-block; padding:5px 10px; border-radius:5px; font-weight:bold; margin-top:10px; }
+.status-pending { background:var(--blue-royal); color:#fff; }
+.status-accepted { background:var(--green); color:#000; }
+.status-rejected { background:var(--red); color:#fff; }
+.btn-primary { background:var(--gold); color:#000; padding:8px 12px; border-radius:6px; text-decoration:none; display:inline-block; margin-top:5px; }
+input { width:100%; padding:10px; border-radius:6px; border:1px solid var(--blue-royal); background:#2a2a2a; color:#fff; }
+button.btn-submit { width:100%; padding:10px; background:var(--gold); border:none; border-radius:6px; color:#000; cursor:pointer; font-weight:bold; }
+.loader { border:4px solid #444; border-top:4px solid var(--gold); border-radius:50%; width:35px; height:35px; animation:spin 0.9s linear infinite; margin:15px auto; }
+@keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+<div class="header-controls">
+    <a href="job_application.html" class="btn-back">🔙 تقديم جديد</a>
+    <a href="index.html" class="btn-back">🏠 الرئيسية</a>
+</div>
+<div class="inquiry-container">
+    <h1 style="color:var(--gold);">🔍 استعلام عن طلب</h1>
+    <form id="inquiryForm">
+        <div class="form-group"><label>رقم الطلب:</label><input type="text" id="applicationId" required placeholder="مثال: 34562"></div>
+        <button type="submit" class="btn-submit">ابحث</button>
+    </form>
+    <div id="resultBox" class="result-box"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+const firebaseConfig = { apiKey: "AIzaSyDpVqFWJfB4rA2-NA4QIl1w07e2LFQaYic", authDomain: "tourguideapp-313c1.firebaseapp.com", databaseURL: "https://tourguideapp-313c1-default-rtdb.firebaseio.com", projectId: "tourguideapp-313c1", storageBucket: "tourguideapp-313c1.appspot.com", messagingSenderId: "1036127588385", appId: "1:1036127588385:web:d144dba8f70fe094395360" };
+const app = initializeApp(firebaseConfig); const db = getDatabase(app);
+document.getElementById('inquiryForm').addEventListener('submit', async function(e){
+    e.preventDefault(); const id=document.getElementById('applicationId').value.trim(); const result=document.getElementById('resultBox');
+    result.style.display='block'; result.innerHTML=`<div class="loader"></div><p style="text-align:center;color:var(--gold);font-weight:bold;">جاري البحث...</p>`;
+    if(!id){ result.innerHTML="<p style='color:var(--red);'>أدخل رقم الطلب</p>"; return; }
+    try{
+        const snap=await get(child(ref(db),'jobApplications')); if(!snap.exists()) throw new Error('لا توجد بيانات');
+        const data=snap.val(); let found=null; for(const key in data){ if(data[key].id===id){ found=data[key]; break; } }
+        if(!found){ result.innerHTML="<p style='color:var(--red);'>❌ لم يتم العثور على الطلب</p>"; return; }
+        let statusClass='status-pending', action='';
+        if(found.status==='تم القبول'){ statusClass='status-accepted'; action=`<div style="margin-top:10px;"><a href="profile_completion.html?role=${found.roleKey}&appId=${found.id}" class="btn-primary">👤 استكمال البيانات</a></div>`; }
+        else if(found.status==='تم الرفض') statusClass='status-rejected';
+        const roleName={GUIDE:'مرشد', COMPANION:'مرافق', DRIVER:'سائق'}[found.roleKey]||found.role;
+        result.innerHTML=`<h2>ملخص الطلب ${found.id}</h2><p><strong>الاسم:</strong> ${found.fullName}</p><p><strong>الوظيفة:</strong> ${roleName}</p><p><strong>التاريخ:</strong> ${found.submissionTime}</p><p><strong>الحالة:</strong> <span class="status-badge ${statusClass}">${found.status}</span></p>${action}`;
+    } catch(err){ result.innerHTML="<p style='color:var(--red);'>❌ حدث خطأ</p>"; }
+});
+</script>
+</body>
+</html>
